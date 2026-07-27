@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.egg-info/
+.pytest_cache/
+artifacts/student_model_ckpt/*.pt
+.env
+.env.*
+*.pem
+*.key
+*.enc
+**/credentials*
+**/.hidden/
+.idea/
+.vscode/
+*.swp

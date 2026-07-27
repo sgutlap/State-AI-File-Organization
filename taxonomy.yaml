@@ -1,0 +1,27 @@
+taxonomy:
+  - id: documents/research
+    name: Research
+    description: papers, notes, latex
+  - id: documents/financial
+    name: Financial
+    description: invoices, receipts, statements
+  - id: code/projects
+    name: Code
+    description: source + notebooks
+  - id: data/datasets
+    name: Data
+    description: csv/json/parquet etc
+  - id: media/images
+    name: Images
+    description: png jpg etc
+  - id: media/audio_video
+    name: Audio/Video
+    description: mp4 mp3 etc
+  - id: archives
+    name: Archives
+    description: zip rar etc
+  - id: misc/uncategorized
+    name: Misc
+    description: idk / low confidence
+
+unknown_class: misc/uncategorized
