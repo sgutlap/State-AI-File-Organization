@@ -23,3 +23,4 @@ class Taxonomy:
 
     def idx_to_label(self):
         return {i: c for i, c in enumerate(self.classes)}
+    
