@@ -10,35 +10,11 @@ def main():
         sys.exit(1)
 
     folder_path = sys.argv[1]
-
- 
-    project_root = Path(__file__).resolve().parent
-    sys.path.insert(0, str(project_root))
+    ckpt_path = "artifacts/student_model_ckpt"
 
 
-    splash = tk.Tk()
-    splash.title("Organize")
-    splash.geometry("250x80")
-    lbl = tk.Label(splash, text="Analyzing files, please wait...", font=("Arial", 10))
-    lbl.pack(expand=True)
-    splash.update()
-
-    try:
-        from core.moves import load_student, build_plan, apply_plan
-
-        ckpt_path = project_root / "artifacts" / "student_model_ckpt"
-        
-        student = load_student(str(ckpt_path))
-        plan = build_plan(folder_path, student)
-    except Exception as e:
-        splash.destroy()
-        from tkinter import messagebox
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror("Error", f"Failed to run organizer:\n{e}")
-        return
-
-    splash.destroy()
+    student = load_student(ckpt_path)
+    plan = build_plan(folder_path, student)
 
     if not plan.moves:
         from tkinter import messagebox
