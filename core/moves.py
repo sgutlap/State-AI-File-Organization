@@ -92,13 +92,15 @@ class Plan:
     dirs: list[str] = field(default_factory=list)
 
 
-def load_student(ckpt="artifacts/student_model_ckpt"):
+def load_student(ckpt="artifacts/student_model_ckpt", quiet: bool = False):
     s = Student()
     if Path(ckpt).exists():
         s.load(ckpt)
-        print("loaded", ckpt)
+        if not quiet:
+            print("loaded", ckpt)
     else:
-        print("warning: missing ckpt at", ckpt)
+        if not quiet:
+            print("warning: missing ckpt at", ckpt)
     return s
 
 
@@ -219,7 +221,6 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
                 Move(dup.absolute_path, str(dest), quarantine, 0.99, "dedupe")
             )
 
-    # Pass A + B3 — classify and move
     for state in states:
         if state.absolute_path in claimed:
             continue
@@ -227,19 +228,21 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
         d = cascade.decide(state)
         cat, conf = d.category, d.confidence
         ext = (state.metadata.extension or "").lower()
+        is_sync = _is_sync_marker(state.metadata.filename)
 
-        # High-precision extension snap
-        if ext in EXT_OVERRIDE and not any(
+        if is_sync:
+            cat = "data/datasets"
+            conf = max(conf, 0.90)
+        elif ext in EXT_OVERRIDE and not any(
             x in state.metadata.filename.lower()
             for x in ("untitled", "temp", "download", "file", "document", "empty")
         ):
             cat = EXT_OVERRIDE[ext]
 
-        # User bins: taxonomy id → folder name
         folder = apply_bins(cat, fmap)
 
         src_top = Path(state.relative_path).parts[0] if Path(state.relative_path).parts else ""
-        force = src_top in SOURCE_TOPS or _is_sync_marker(state.metadata.filename)
+        force = src_top in SOURCE_TOPS or is_sync
 
         if conf < conf_threshold and not force:
             folder = apply_bins(student.taxonomy.unknown_class, fmap)

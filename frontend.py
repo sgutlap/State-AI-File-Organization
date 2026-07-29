@@ -35,7 +35,7 @@ def main():
     from core.taxonomy import add_category, list_categories
     from core.user_bins import folder_map, load_prefs, set_bin
 
-    student = load_student(str(ROOT / "artifacts" / "student_model_ckpt"))
+    student = load_student(str(ROOT / "artifacts" / "student_model_ckpt"), quiet=True)
     plan = build_plan(folder_path, student)
     plan_root = Path(plan.root)
     splash.destroy()
@@ -123,23 +123,29 @@ def main():
     tk.Entry(map_row, textvariable=folder_var, width=22).pack(side="left", padx=6)
 
     def save_one_bin():
+        tax_id = tax_var.get()
+        new_folder = folder_var.get().strip()
+        old_folder = fmap.get(tax_id, tax_id)
         try:
-            set_bin(tax_var.get(), folder_var.get(), enable=True)
+            set_bin(tax_id, new_folder, enable=True)
             bins_var.set(True)
             fmap.clear()
             fmap.update(folder_map())
             refresh_categories()
-            # Remap matching moves to new folder
             for m in plan.moves:
-                # only remap if move still uses old taxonomy-style path for this id
-                if m.category in (tax_var.get(), fmap.get(tax_var.get())):
-                    new_folder = folder_var.get().strip()
+                if m.category in (tax_id, old_folder):
                     m.category = new_folder
-                    m.dst = str(_dest_for(m, new_folder))
-                    # update combo display
+                    name = Path(m.dst).name
+                    dest_dir = plan_root / new_folder
+                    dest = dest_dir / name
+                    n = 1
+                    while dest.exists() and dest.resolve() != Path(m.src).resolve():
+                        dest = dest_dir / f"{Path(name).stem}_{n}{Path(name).suffix}"
+                        n += 1
+                    m.dst = str(dest)
             for c, m in zip(combos, plan.moves):
                 c.set(m.category)
-            status.set(f"Saved bin: {tax_var.get()} → {folder_var.get()}")
+            status.set(f"Saved bin: {tax_id} → {new_folder}")
         except ValueError as e:
             messagebox.showerror("User bins", str(e))
 
@@ -158,6 +164,16 @@ def main():
     canvas.configure(yscrollcommand=scrollbar.set)
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
+
+    def _on_mousewheel(event):
+        # Windows / macOS
+        delta = -1 * int(event.delta / 120) if event.delta else 0
+        if delta:
+            canvas.yview_scroll(delta, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
 
     hdr = tk.Frame(rows_frame)
     hdr.pack(fill="x", pady=(0, 4))

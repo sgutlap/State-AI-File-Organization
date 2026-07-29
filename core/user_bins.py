@@ -42,17 +42,18 @@ def normalize_folder(path: str) -> str:
 
 
 def folder_map(prefs: dict | None = None) -> dict[str, str]:
-    """taxonomy_id → destination folder path."""
+    """taxonomy_id → destination folder path. Empty when user bins are off."""
     prefs = prefs if prefs is not None else load_prefs()
+    bins = prefs.get("user_bins") or {}
+    if not bins.get("enabled"):
+        return {}
     out: dict[str, str] = {}
     for cat_id, folder in (prefs.get("preferred_category_names") or {}).items():
         if folder:
             out[str(cat_id)] = normalize_folder(str(folder))
-    bins = prefs.get("user_bins") or {}
-    if bins.get("enabled"):
-        for cat_id, folder in (bins.get("folder_map") or {}).items():
-            if folder:
-                out[str(cat_id)] = normalize_folder(str(folder))
+    for cat_id, folder in (bins.get("folder_map") or {}).items():
+        if folder:
+            out[str(cat_id)] = normalize_folder(str(folder))
     return out
 
 

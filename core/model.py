@@ -133,4 +133,8 @@ class Student:
     def load(self, path: str):
         weight = Path(path) / "student_model.pt"
         if weight.exists():
-            self.model.load_state_dict(torch.load(weight, map_location=self.device))
+            try:
+                state = torch.load(weight, map_location=self.device, weights_only=True)
+            except TypeError:
+                state = torch.load(weight, map_location=self.device)
+            self.model.load_state_dict(state)

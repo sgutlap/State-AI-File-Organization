@@ -1,11 +1,14 @@
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parent
+os.chdir(ROOT)
+sys.path.insert(0, str(ROOT))
 
 SERVE_URL = "http://127.0.0.1:18765"
 from core.moves import apply_plan, build_plan, duplicate_organized, load_student, print_plan
@@ -37,7 +40,7 @@ def main():
     p.add_argument("folder", help="folder path (Finder Quick Action passes this)")
     p.add_argument("--apply", action="store_true", help="move files in this folder")
     p.add_argument("--dupe", action="store_true", help="copy to '<name> Organized' in parent, then organize copy")
-    p.add_argument("--ckpt", default="artifacts/student_model_ckpt")
+    p.add_argument("--ckpt", default=str(ROOT / "artifacts" / "student_model_ckpt"))
     p.add_argument("--threshold", type=float, default=0.5)
     p.add_argument("--no-server", action="store_true", help="skip warm server, load model locally")
     args = p.parse_args()
