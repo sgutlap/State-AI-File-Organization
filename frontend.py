@@ -1,12 +1,49 @@
+import json
 import os
 import sys
 import tkinter as tk
+import urllib.error
+import urllib.request
 from pathlib import Path
 from tkinter import messagebox, simpledialog, ttk
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 ADD_NEW = "+ new folder..."
+SERVE_URL = "http://127.0.0.1:18765"
+
+
+def _plan_via_server(folder: str, threshold: float = 0.5):
+    """Use warm serve.py if running — keeps Windows UI snappy."""
+    from core.moves import Move, Plan
+
+    payload = json.dumps({"folder": folder, "threshold": threshold}).encode()
+    req = urllib.request.Request(
+        f"{SERVE_URL}/plan",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            data = json.loads(resp.read().decode())
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return None
+    if not data.get("ok"):
+        return None
+    plan = Plan(root=str(data.get("root") or folder))
+    plan.dirs = list(data.get("dirs") or [])
+    for m in data.get("moves") or []:
+        plan.moves.append(
+            Move(
+                src=str(m["src"]),
+                dst=str(m["dst"]),
+                category=str(m.get("category") or ""),
+                confidence=float(m.get("confidence") or 0),
+                tier=str(m.get("tier") or "student"),
+            )
+        )
+    return plan, list(data.get("taxonomy") or [])
 
 
 def main():
@@ -21,9 +58,10 @@ def main():
 
     splash = tk.Tk()
     splash.title("Organize")
-    splash.geometry("260x80")
+    splash.geometry("280x90")
     splash.resizable(False, False)
-    tk.Label(splash, text="Looking at files...", font=("Segoe UI", 10)).pack(expand=True)
+    splash_lbl = tk.Label(splash, text="Looking at files...", font=("Segoe UI", 10))
+    splash_lbl.pack(expand=True)
     splash.update()
 
     root_dir = Path(__file__).resolve().parent
@@ -31,11 +69,23 @@ def main():
     sys.path.insert(0, str(root_dir))
 
     from core.moves import apply_plan, build_plan, load_student
-    from core.taxonomy import add_category, list_categories
+    from core.taxonomy import Taxonomy, add_category, list_categories
     from core.user_bins import folder_map, load_prefs, save_prefs, set_bin
 
-    student = load_student(str(root_dir / "artifacts" / "student_model_ckpt"), quiet=True)
-    plan = build_plan(folder_path, student)
+    warmed = _plan_via_server(folder_path)
+    if warmed is not None:
+        plan, tax_ids = warmed
+        splash_lbl.config(text="Ready (warm server)")
+        splash.update()
+    else:
+        splash_lbl.config(text="Loading model...")
+        splash.update()
+        student = load_student(str(root_dir / "artifacts" / "student_model_ckpt"), quiet=True)
+        plan = build_plan(folder_path, student)
+        tax_ids = list(student.taxonomy.classes)
+
+    if not tax_ids:
+        tax_ids = list(Taxonomy().classes)
     plan_root = Path(plan.root)
     splash.destroy()
 
@@ -62,7 +112,6 @@ def main():
     bins_frame = tk.LabelFrame(root, text="custom folders (optional)", padx=8, pady=4)
     bins_frame.pack(fill="x", padx=10, pady=4)
     bins_var = tk.BooleanVar(value=bins_on)
-    tax_ids = student.taxonomy.classes
     fmap = folder_map(prefs)
     tax_var = tk.StringVar(value=tax_ids[0] if tax_ids else "")
     folder_var = tk.StringVar(value=fmap.get(tax_var.get(), tax_var.get()))
