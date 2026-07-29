@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -6,66 +7,47 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
-from core.moves import apply_plan, build_plan, duplicate_organized, load_student
+from core.moves import Move, Plan, apply_plan, build_plan, duplicate_organized, load_student
+from core.taxonomy import Taxonomy
 
 PORT = 18765
 CKPT = ROOT / "artifacts" / "student_model_ckpt"
 
 
-class Handler(BaseHTTPRequestHandler):
-    student = None
-
-    def log_message(self, fmt, *args):
-        print(f"[serve] {args[0]}")
-
-    def do_GET(self):
-        if self.path == "/health":
-            self._json(200, {"ok": True, "loaded": Handler.student is not None})
-        else:
-            self._json(404, {"error": "not found"})
-
-    def do_POST(self):
-        if self.path != "/organize":
-            self._json(404, {"error": "not found"})
-            return
-        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)) or b"{}"))
-        folder = Path(body.get("folder", "")).expanduser().resolve()
-        mode = body.get("mode", "dry")
-        threshold = float(body.get("threshold", 0.5))
-        if not folder.is_dir():
-            self._json(400, {"error": f"not a folder: {folder}"})
-            return
-
-        lines = []
-        if mode == "dupe":
-            work = duplicate_organized(folder)
-            lines.append(f"copied to {work}")
-            plan = build_plan(str(work), Handler.student, conf_threshold=threshold)
-            lines.extend(_plan_lines(plan))
-            n = apply_plan(plan)
-            lines.append(f"done — {n} moves in {work}")
-            self._json(200, {"ok": True, "mode": mode, "folder": str(work), "moves": n, "log": lines})
-            return
-
-        plan = build_plan(str(folder), Handler.student, conf_threshold=threshold)
-        lines.extend(_plan_lines(plan))
-        if mode == "apply":
-            n = apply_plan(plan)
-            lines.append(f"moved {n} files")
-        else:
-            lines.append("dry-run")
-        self._json(200, {"ok": True, "mode": mode, "folder": str(folder), "moves": len(plan.moves), "log": lines})
-
-    def _json(self, code, data):
-        raw = json.dumps(data).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(raw)))
-        self.end_headers()
-        self.wfile.write(raw)
+def _plan_to_dict(plan: Plan) -> dict:
+    return {
+        "root": plan.root,
+        "dirs": list(plan.dirs),
+        "moves": [
+            {
+                "src": m.src,
+                "dst": m.dst,
+                "category": m.category,
+                "confidence": m.confidence,
+                "tier": m.tier,
+            }
+            for m in plan.moves
+        ],
+    }
 
 
-def _plan_lines(plan, limit=40):
+def _plan_from_dict(data: dict) -> Plan:
+    plan = Plan(root=str(data.get("root") or ""))
+    plan.dirs = list(data.get("dirs") or [])
+    for m in data.get("moves") or []:
+        plan.moves.append(
+            Move(
+                src=str(m["src"]),
+                dst=str(m["dst"]),
+                category=str(m.get("category") or ""),
+                confidence=float(m.get("confidence") or 0),
+                tier=str(m.get("tier") or "student"),
+            )
+        )
+    return plan
+
+
+def _plan_lines(plan: Plan, limit: int = 40) -> list[str]:
     out = [f"plan for {plan.root}", f"  {len(plan.moves)} moves, {len(plan.dirs)} folders"]
     for m in plan.moves[:limit]:
         name = Path(m.src).name
@@ -79,12 +61,124 @@ def _plan_lines(plan, limit=40):
     return out
 
 
+def _read_json(handler: BaseHTTPRequestHandler) -> dict:
+    n = int(handler.headers.get("Content-Length", 0) or 0)
+    raw = handler.rfile.read(n) if n else b"{}"
+    if not raw:
+        return {}
+    return json.loads(raw.decode("utf-8"))
+
+
+class Handler(BaseHTTPRequestHandler):
+    student = None
+    taxonomy_classes: list[str] = []
+
+    def log_message(self, fmt, *args):
+        print(f"[serve] {args[0]}")
+
+    def do_GET(self):
+        if self.path == "/health":
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "loaded": Handler.student is not None,
+                    "taxonomy": Handler.taxonomy_classes,
+                    "port": PORT,
+                },
+            )
+        else:
+            self._json(404, {"error": "not found"})
+
+    def do_POST(self):
+        if self.path == "/plan":
+            self._handle_plan()
+        elif self.path == "/organize":
+            self._handle_organize()
+        else:
+            self._json(404, {"error": "not found"})
+
+    def _handle_plan(self):
+        body = _read_json(self)
+        folder = Path(body.get("folder", "")).expanduser().resolve()
+        threshold = float(body.get("threshold", 0.5))
+        if not folder.is_dir():
+            self._json(400, {"error": f"not a folder: {folder}"})
+            return
+        plan = build_plan(str(folder), Handler.student, conf_threshold=threshold)
+        payload = _plan_to_dict(plan)
+        payload["ok"] = True
+        payload["taxonomy"] = Handler.taxonomy_classes
+        self._json(200, payload)
+
+    def _handle_organize(self):
+        body = _read_json(self)
+        folder = Path(body.get("folder", "")).expanduser().resolve()
+        mode = body.get("mode", "dry")
+        threshold = float(body.get("threshold", 0.5))
+        if not folder.is_dir():
+            self._json(400, {"error": f"not a folder: {folder}"})
+            return
+
+        lines: list[str] = []
+        if mode == "dupe":
+            work = duplicate_organized(folder)
+            lines.append(f"copied to {work}")
+            plan = build_plan(str(work), Handler.student, conf_threshold=threshold)
+            lines.extend(_plan_lines(plan))
+            n = apply_plan(plan)
+            lines.append(f"done — {n} moves in {work}")
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "mode": mode,
+                    "folder": str(work),
+                    "moves": n,
+                    "log": lines,
+                    "plan": _plan_to_dict(plan),
+                },
+            )
+            return
+
+        plan = build_plan(str(folder), Handler.student, conf_threshold=threshold)
+        lines.extend(_plan_lines(plan))
+        n_moved = 0
+        if mode == "apply":
+            n_moved = apply_plan(plan)
+            lines.append(f"moved {n_moved} files")
+        else:
+            lines.append("dry-run")
+        self._json(
+            200,
+            {
+                "ok": True,
+                "mode": mode,
+                "folder": str(folder),
+                "moves": len(plan.moves),
+                "moved": n_moved,
+                "log": lines,
+                "plan": _plan_to_dict(plan),
+            },
+        )
+
+    def _json(self, code, data):
+        raw = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+
 def main():
     if not CKPT.exists():
         sys.exit(f"missing checkpoint: {CKPT}")
     print("loading model...")
-    Handler.student = load_student(str(CKPT))
+    Handler.student = load_student(str(CKPT), quiet=True)
+    Handler.taxonomy_classes = list(Taxonomy().classes)
     print(f"ready on http://127.0.0.1:{PORT}")
+    print("keep this window open — frontend / organize will stay fast")
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     try:
         server.serve_forever()
