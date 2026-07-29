@@ -5,6 +5,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 artifacts/student_model_ckpt/*.pt
+artifacts/ui_runs/
 .env
 .env.*
 *.pem

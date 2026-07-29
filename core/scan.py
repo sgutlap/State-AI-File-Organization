@@ -5,7 +5,17 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-SKIP = {".git", "__pycache__", ".venv", "node_modules", ".DS_Store"}
+SKIP = {".git", "__pycache__", ".venv", "node_modules", ".DS_Store", ".idea", ".vscode"}
+
+SYNC_KEEP = {
+    ".dropbox",
+    ".dropbox_identity",
+    ".sync_identity",
+    ".synced_folder_icon",
+    "._sync_token",
+    "._sync_placeholder",
+    ".localized",
+}
 
 TEXT_EXTS = {
     ".txt", ".md", ".py", ".json", ".yaml", ".yml", ".csv", ".tsv",
@@ -61,6 +71,16 @@ def _sample(path: Path, meta: FileMeta, max_chars: int = 1000) -> str:
         return f"[Extraction Error: {e}]"
 
 
+def _keep_file(name: str) -> bool:
+    if name in SYNC_KEEP:
+        return True
+    if name.startswith("._"):
+        return True  # AppleDouble / sync tokens
+    if name.startswith("."):
+        return False
+    return True
+
+
 def scan_folder(root: str) -> list[FileState]:
     root_path = Path(root).resolve()
     if not root_path.is_dir():
@@ -68,7 +88,9 @@ def scan_folder(root: str) -> list[FileState]:
 
     out = []
     for p in root_path.rglob("*"):
-        if not p.is_file() or p.name.startswith("."):
+        if not p.is_file():
+            continue
+        if not _keep_file(p.name):
             continue
         rel = p.relative_to(root_path)
         if any(part in SKIP for part in rel.parts):
@@ -89,7 +111,7 @@ def scan_folder(root: str) -> list[FileState]:
         out.append(
             FileState(
                 absolute_path=str(p),
-                relative_path=str(rel),
+                relative_path=str(rel).replace("\\", "/"),
                 metadata=meta,
                 content_sample=_sample(p, meta),
             )

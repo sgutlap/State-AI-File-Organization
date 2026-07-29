@@ -1,0 +1,10 @@
+{
+  "user_bins": {
+    "enabled": false,
+    "folder_map": {}
+  },
+  "preferred_category_names": {},
+  "rename_style": "normalize_noise",
+  "dedupe_policy": "quarantine",
+  "quarantine_dir": "_duplicates"
+}

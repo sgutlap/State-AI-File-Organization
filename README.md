@@ -10,3 +10,6 @@ Libraries:
 torch
 transformers
 pyyaml
+
+# Windows 
+Run - `python Install_context_menu.py`

@@ -1,11 +1,10 @@
-# retrain from labels json
 import argparse
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core.model import Student
-from core.train_kd import load_soft_labels, train
+from state_ai.model import Student
+from state_ai.train_kd import load_soft_labels, train
 
 
 def main():
