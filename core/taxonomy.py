@@ -1,9 +1,11 @@
-from __future__ import annotations
 from pathlib import Path
+
 import yaml
-from core.user_bins import apply_bins, folder_map, load_prefs, set_bin
+
+from core.user_bins import apply_bins, folder_map, load_prefs
 
 CUSTOM_PATH = Path(__file__).resolve().parent.parent / "custom_taxonomy.yaml"
+
 
 class Taxonomy:
     def __init__(self, config_path=None):
@@ -35,19 +37,10 @@ def load_custom(path=CUSTOM_PATH):
 
 
 def list_categories(taxonomy_yaml_path=None, custom_path=CUSTOM_PATH):
-    """Folders the UI can sort into (taxonomy + user-bin names + custom)."""
     tax = Taxonomy(taxonomy_yaml_path)
     fmap = folder_map(load_prefs())
-    # show remapped folder names when user bins are on
-    built_in = [apply_bins(c, fmap) for c in tax.classes]
-    # de-dupe while preserving order
-    seen = set()
-    out = []
-    for c in built_in:
-        if c not in seen:
-            seen.add(c)
-            out.append(c)
-    for c in load_custom(custom_path):
+    out, seen = [], set()
+    for c in [apply_bins(x, fmap) for x in tax.classes] + load_custom(custom_path):
         if c not in seen:
             seen.add(c)
             out.append(c)
@@ -55,14 +48,10 @@ def list_categories(taxonomy_yaml_path=None, custom_path=CUSTOM_PATH):
 
 
 def add_category(name, root, path=CUSTOM_PATH):
-    """Create a custom destination folder and remember it for the UI."""
     name = name.strip().replace("\\", "/").strip("/")
     if not name or ".." in name.split("/") or ":" in name:
         raise ValueError(f"bad folder name: {name!r}")
-
-    folder = Path(root) / name
-    folder.mkdir(parents=True, exist_ok=True)
-
+    (Path(root) / name).mkdir(parents=True, exist_ok=True)
     existing = load_custom(path)
     if name not in existing:
         existing.append(name)
@@ -71,8 +60,3 @@ def add_category(name, root, path=CUSTOM_PATH):
             encoding="utf-8",
         )
     return existing
-
-
-def set_user_bin(taxonomy_id: str, folder_name: str):
-    """Map a taxonomy class to a custom folder name (persisted)."""
-    return set_bin(taxonomy_id, folder_name, enable=True)

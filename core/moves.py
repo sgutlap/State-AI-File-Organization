@@ -13,20 +13,11 @@ from core.user_bins import apply_bins, folder_map, load_prefs
 
 COPY_SKIP = shutil.ignore_patterns(".git", "__pycache__", ".venv", ".DS_Store", "node_modules")
 
-SOURCE_TOPS = frozenset(
-    {
-        "ignored_files",
-        "partial_sync",
-        "conflicted_copies",
-        "shared_with_me",
-        "multi_device",
-        "from_inbox",
-        "from_spam",
-        "from_sent",
-        "attachments_by_date",
-        "extracted_zips",
-    }
-)
+SOURCE_TOPS = frozenset({
+    "ignored_files", "partial_sync", "conflicted_copies", "shared_with_me",
+    "multi_device", "from_inbox", "from_spam", "from_sent",
+    "attachments_by_date", "extracted_zips",
+})
 
 SYNC_MARKER_RE = re.compile(
     r"^(?:desktop\.ini|thumbs\.db|\.ds_store|com\.apple\.timemachine\.supported|"
@@ -36,15 +27,8 @@ SYNC_MARKER_RE = re.compile(
     re.IGNORECASE,
 )
 SYNC_MARKER_SUBSTR = (
-    ".dropbox",
-    ".sync",
-    "._sync",
-    ".localized",
-    "timemachine",
-    "sync_token",
-    "sync_identity",
-    "sync_placeholder",
-    "synced_folder",
+    ".dropbox", ".sync", "._sync", ".localized", "timemachine",
+    "sync_token", "sync_identity", "sync_placeholder", "synced_folder",
 )
 
 NOISE_RE = re.compile(
@@ -53,24 +37,13 @@ NOISE_RE = re.compile(
 )
 
 EXT_OVERRIDE = {
-    ".png": "media/images",
-    ".jpg": "media/images",
-    ".jpeg": "media/images",
-    ".gif": "media/images",
-    ".webp": "media/images",
-    ".svg": "media/images",
-    ".fig": "media/images",
-    ".psd": "media/images",
-    ".mp4": "media/audio_video",
-    ".mov": "media/audio_video",
-    ".mp3": "media/audio_video",
-    ".wav": "media/audio_video",
-    ".zip": "archives",
-    ".rar": "archives",
-    ".7z": "archives",
-    ".csv": "data/datasets",
-    ".parquet": "data/datasets",
-    ".tsv": "data/datasets",
+    ".png": "media/images", ".jpg": "media/images", ".jpeg": "media/images",
+    ".gif": "media/images", ".webp": "media/images", ".svg": "media/images",
+    ".fig": "media/images", ".psd": "media/images",
+    ".mp4": "media/audio_video", ".mov": "media/audio_video",
+    ".mp3": "media/audio_video", ".wav": "media/audio_video",
+    ".zip": "archives", ".rar": "archives", ".7z": "archives",
+    ".csv": "data/datasets", ".parquet": "data/datasets", ".tsv": "data/datasets",
 }
 
 PROJECT_MARKERS = ("package.json", "pyproject.toml", "Cargo.toml", "go.mod", "requirements.txt")
@@ -98,17 +71,15 @@ def load_student(ckpt="artifacts/student_model_ckpt", quiet: bool = False):
         s.load(ckpt)
         if not quiet:
             print("loaded", ckpt)
-    else:
-        if not quiet:
-            print("warning: missing ckpt at", ckpt)
+    elif not quiet:
+        print("warning: missing ckpt at", ckpt)
     return s
 
 
 def duplicate_organized(src: Path) -> Path:
     src = src.resolve()
     parent = src.parent
-    base = f"{src.name} Organized"
-    dst = parent / base
+    dst = parent / f"{src.name} Organized"
     if dst.exists():
         n = 1
         while (parent / f"{src.name} Organized {n}").exists():
@@ -121,22 +92,18 @@ def duplicate_organized(src: Path) -> Path:
 
 def _is_sync_marker(name: str) -> bool:
     low = (name or "").lower()
-    if SYNC_MARKER_RE.match(low):
-        return True
-    return any(s in low for s in SYNC_MARKER_SUBSTR)
+    return bool(SYNC_MARKER_RE.match(low)) or any(s in low for s in SYNC_MARKER_SUBSTR)
 
 
 def _normalize_name(filename: str) -> str | None:
-    """Strip (1)/Copy noise. Returns new name or None."""
     p = Path(filename)
-    stem, ext = p.stem, p.suffix
-    m = NOISE_RE.match(stem)
+    m = NOISE_RE.match(p.stem)
     if not m:
         return None
     clean = m.group("stem").strip()
-    if not clean or clean == stem:
+    if not clean or clean == p.stem:
         return None
-    return f"{clean}{ext}"
+    return f"{clean}{p.suffix}"
 
 
 def _file_hash(path: Path) -> str | None:
@@ -161,8 +128,7 @@ def _disambiguate(dest: Path, used: set[str]) -> Path:
         n += 1
 
 
-def _project_roots(states: list[FileState], root: Path) -> dict[str, str]:
-    """relative_path → project root relative path for keep-together."""
+def _project_roots(states: list[FileState]) -> dict[str, str]:
     members: dict[str, str] = {}
     by_parent: dict[str, list[FileState]] = {}
     for s in states:
@@ -170,10 +136,9 @@ def _project_roots(states: list[FileState], root: Path) -> dict[str, str]:
         by_parent.setdefault(parent, []).append(s)
 
     for parent, files in by_parent.items():
-        names = {Path(f.metadata.filename).name.lower() for f in files}
+        names = {f.metadata.filename.lower() for f in files}
         if not any(m.lower() in names for m in PROJECT_MARKERS):
             continue
-        # Don't treat source dumps as projects
         top = parent.split("/")[0] if parent not in (".", "") else ""
         if top in SOURCE_TOPS:
             continue
@@ -194,9 +159,8 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
     claimed: set[str] = set()
 
     states = scan_folder(root)
-    project_map = _project_roots(states, root_path)
+    project_map = _project_roots(states)
 
-    # Pass B1 — exact-hash dedupe (skip empty stubs — same hash, not real dupes)
     hashes: dict[str, list[FileState]] = {}
     for s in states:
         if s.metadata.size_bytes <= 0:
@@ -209,17 +173,14 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
     for group in hashes.values():
         if len(group) < 2:
             continue
-        # keep first (shortest path), quarantine rest
-        group_sorted = sorted(group, key=lambda x: (len(x.relative_path), x.relative_path))
-        for dup in group_sorted[1:]:
+        keepers = sorted(group, key=lambda x: (len(x.relative_path), x.relative_path))
+        for dup in keepers[1:]:
             dest_dir = root_path / quarantine
             dest = _disambiguate(dest_dir / Path(dup.absolute_path).name, used_dst)
             needed.add(str(dest_dir))
             used_dst.add(str(dest))
             claimed.add(dup.absolute_path)
-            plan.moves.append(
-                Move(dup.absolute_path, str(dest), quarantine, 0.99, "dedupe")
-            )
+            plan.moves.append(Move(dup.absolute_path, str(dest), quarantine, 0.99, "dedupe"))
 
     for state in states:
         if state.absolute_path in claimed:
@@ -240,7 +201,6 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
             cat = EXT_OVERRIDE[ext]
 
         folder = apply_bins(cat, fmap)
-
         src_top = Path(state.relative_path).parts[0] if Path(state.relative_path).parts else ""
         force = src_top in SOURCE_TOPS or is_sync
 
@@ -269,7 +229,6 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
             plan.moves.append(Move(state.absolute_path, str(dest), keep, round(conf, 4), d.tier))
             continue
 
-        # Rename noise
         final_name = state.metadata.filename
         if prefs.get("rename_style") == "normalize_noise":
             final_name = _normalize_name(final_name) or final_name
@@ -285,7 +244,9 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
         needed.add(str(dest_dir))
         used_dst.add(str(dest))
         claimed.add(state.absolute_path)
-        plan.moves.append(Move(state.absolute_path, str(dest), folder, round(max(conf, 0.85) if force else conf, 4), d.tier))
+        plan.moves.append(
+            Move(state.absolute_path, str(dest), folder, round(max(conf, 0.85) if force else conf, 4), d.tier)
+        )
 
     plan.dirs = sorted(needed)
     return plan
@@ -317,7 +278,6 @@ def apply_plan(plan: Plan) -> int:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(src), str(dst))
         n += 1
-    # prune empty leftover dirs (best-effort)
     root = Path(plan.root)
     for p in sorted(root.rglob("*"), key=lambda x: len(x.parts), reverse=True):
         if p.is_dir() and not any(p.iterdir()):

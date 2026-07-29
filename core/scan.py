@@ -6,17 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 SKIP = {".git", "__pycache__", ".venv", "node_modules", ".DS_Store", ".idea", ".vscode"}
-
 SYNC_KEEP = {
-    ".dropbox",
-    ".dropbox_identity",
-    ".sync_identity",
-    ".synced_folder_icon",
-    "._sync_token",
-    "._sync_placeholder",
-    ".localized",
+    ".dropbox", ".dropbox_identity", ".sync_identity", ".synced_folder_icon",
+    "._sync_token", "._sync_placeholder", ".localized",
 }
-
 TEXT_EXTS = {
     ".txt", ".md", ".py", ".json", ".yaml", ".yml", ".csv", ".tsv",
     ".html", ".css", ".js", ".ts", ".c", ".cpp", ".h", ".java",
@@ -64,21 +57,15 @@ def _sample(path: Path, meta: FileMeta, max_chars: int = 1000) -> str:
         text = path.read_text(encoding="utf-8", errors="ignore")[:4096]
         lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
         out = "\n".join(lines[:30])
-        if len(out) > max_chars:
-            out = out[:max_chars] + "..."
-        return out or "[Empty File]"
+        return (out[:max_chars] + "...") if len(out) > max_chars else (out or "[Empty File]")
     except OSError as e:
         return f"[Extraction Error: {e}]"
 
 
 def _keep_file(name: str) -> bool:
-    if name in SYNC_KEEP:
+    if name in SYNC_KEEP or name.startswith("._"):
         return True
-    if name.startswith("._"):
-        return True  # AppleDouble / sync tokens
-    if name.startswith("."):
-        return False
-    return True
+    return not name.startswith(".")
 
 
 def scan_folder(root: str) -> list[FileState]:
@@ -88,14 +75,11 @@ def scan_folder(root: str) -> list[FileState]:
 
     out = []
     for p in root_path.rglob("*"):
-        if not p.is_file():
-            continue
-        if not _keep_file(p.name):
+        if not p.is_file() or not _keep_file(p.name):
             continue
         rel = p.relative_to(root_path)
         if any(part in SKIP for part in rel.parts):
             continue
-
         st = p.stat()
         ext = p.suffix.lower()
         mime = mimetypes.guess_type(str(p))[0] or "application/octet-stream"
@@ -108,12 +92,5 @@ def scan_folder(root: str) -> list[FileState]:
             mime_type=mime,
             is_binary=_binary(p, ext, mime),
         )
-        out.append(
-            FileState(
-                absolute_path=str(p),
-                relative_path=str(rel).replace("\\", "/"),
-                metadata=meta,
-                content_sample=_sample(p, meta),
-            )
-        )
+        out.append(FileState(str(p), str(rel).replace("\\", "/"), meta, _sample(p, meta)))
     return out

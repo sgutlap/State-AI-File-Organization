@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
-from core.moves import apply_plan, build_plan, duplicate_organized, load_student, print_plan
+from core.moves import apply_plan, build_plan, duplicate_organized, load_student
 
 PORT = 18765
 CKPT = ROOT / "artifacts" / "student_model_ckpt"
@@ -28,36 +28,32 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/organize":
             self._json(404, {"error": "not found"})
             return
-        n = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(n) or b"{}")
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)) or b"{}"))
         folder = Path(body.get("folder", "")).expanduser().resolve()
-        mode = body.get("mode", "dry")  # dry | apply | dupe
+        mode = body.get("mode", "dry")
         threshold = float(body.get("threshold", 0.5))
-
         if not folder.is_dir():
             self._json(400, {"error": f"not a folder: {folder}"})
             return
 
-        student = Handler.student
         lines = []
-
         if mode == "dupe":
             work = duplicate_organized(folder)
             lines.append(f"copied to {work}")
-            plan = build_plan(str(work), student, conf_threshold=threshold)
+            plan = build_plan(str(work), Handler.student, conf_threshold=threshold)
             lines.extend(_plan_lines(plan))
-            n_moves = apply_plan(plan)
-            lines.append(f"done — {n_moves} moves in {work}")
-            self._json(200, {"ok": True, "mode": mode, "folder": str(work), "moves": n_moves, "log": lines})
+            n = apply_plan(plan)
+            lines.append(f"done — {n} moves in {work}")
+            self._json(200, {"ok": True, "mode": mode, "folder": str(work), "moves": n, "log": lines})
             return
 
-        plan = build_plan(str(folder), student, conf_threshold=threshold)
+        plan = build_plan(str(folder), Handler.student, conf_threshold=threshold)
         lines.extend(_plan_lines(plan))
         if mode == "apply":
-            n_moves = apply_plan(plan)
-            lines.append(f"moved {n_moves} files")
+            n = apply_plan(plan)
+            lines.append(f"moved {n} files")
         else:
-            lines.append("dry-run (pass mode=apply or dupe)")
+            lines.append("dry-run")
         self._json(200, {"ok": True, "mode": mode, "folder": str(folder), "moves": len(plan.moves), "log": lines})
 
     def _json(self, code, data):
@@ -86,12 +82,9 @@ def _plan_lines(plan, limit=40):
 def main():
     if not CKPT.exists():
         sys.exit(f"missing checkpoint: {CKPT}")
-
     print("loading model...")
     Handler.student = load_student(str(CKPT))
     print(f"ready on http://127.0.0.1:{PORT}")
-    print("organize.py will use this when running. Ctrl+C to stop.")
-
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     try:
         server.serve_forever()
