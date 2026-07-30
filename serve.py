@@ -1,6 +1,10 @@
 from __future__ import annotations
 import json
+import os
+import signal
+import subprocess
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -12,6 +16,46 @@ from core.taxonomy import Taxonomy
 
 PORT = 18765
 CKPT = ROOT / "artifacts" / "student_model_ckpt"
+
+
+def _pids_on_port(port: int) -> list[int]:
+    try:
+        out = subprocess.check_output(
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return []
+    pids = []
+    for line in out.splitlines():
+        line = line.strip()
+        if line.isdigit():
+            pid = int(line)
+            if pid != os.getpid():
+                pids.append(pid)
+    return pids
+
+
+def _free_port(port: int) -> None:
+    pids = _pids_on_port(port)
+    if not pids:
+        return
+    print(f"port {port} busy (pid {', '.join(map(str, pids))}) — stopping leftover server…")
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    deadline = time.time() + 3.0
+    while time.time() < deadline and _pids_on_port(port):
+        time.sleep(0.1)
+    for pid in _pids_on_port(port):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    time.sleep(0.1)
 
 
 def _plan_to_dict(plan: Plan) -> dict:
@@ -174,12 +218,26 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     if not CKPT.exists():
         sys.exit(f"missing checkpoint: {CKPT}")
+    _free_port(PORT)
     print("loading model...")
     Handler.student = load_student(str(CKPT), quiet=True)
     Handler.taxonomy_classes = list(Taxonomy().classes)
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    except OSError as exc:
+        if getattr(exc, "errno", None) == 48 or "Address already in use" in str(exc):
+            _free_port(PORT)
+            try:
+                server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+            except OSError:
+                sys.exit(
+                    f"port {PORT} still in use. Run:  lsof -iTCP:{PORT} -sTCP:LISTEN\n"
+                    f"then:  kill <pid>"
+                )
+        else:
+            raise
     print(f"ready on http://127.0.0.1:{PORT}")
-    print("keep this window open — frontend / organize will stay fast")
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    print("keep this window open!")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

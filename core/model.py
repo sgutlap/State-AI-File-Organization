@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import logging
 import math
 import os
 from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,12 +16,33 @@ from core.taxonomy import Taxonomy
 os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
+BASE_MODEL = "distilbert-base-uncased"
+
 
 def _hf(loader, name, **kw):
+    """Prefer local files; fall back to hub once if needed."""
     try:
         return loader(name, local_files_only=True, **kw)
     except Exception:
         return loader(name, local_files_only=False, **kw)
+
+
+def _load_tokenizer(base_model: str, ckpt: Path | None):
+    if ckpt is not None and (ckpt / "tokenizer.json").exists():
+        try:
+            return AutoTokenizer.from_pretrained(str(ckpt), local_files_only=True)
+        except Exception:
+            pass
+    return _hf(AutoTokenizer.from_pretrained, base_model)
+
+
+def _load_config(base_model: str, ckpt: Path | None):
+    if ckpt is not None and (ckpt / "config.json").exists():
+        try:
+            return AutoConfig.from_pretrained(str(ckpt), local_files_only=True)
+        except Exception:
+            pass
+    return _hf(AutoConfig.from_pretrained, base_model)
 
 
 class TabularEncoder(nn.Module):
@@ -40,26 +63,37 @@ class TabularEncoder(nn.Module):
 
 
 class StudentNet(nn.Module):
-    def __init__(self, base_model_name, num_classes, tabular_embed_dim=64, dropout=0.1):
+    def __init__(self, config, num_classes, tabular_embed_dim=64, dropout=0.1):
         super().__init__()
-        cfg = _hf(AutoConfig.from_pretrained, base_model_name)
-        self.transformer = _hf(AutoModel.from_pretrained, base_model_name, config=cfg)
+        # from_config = architecture only, no hub download (weights come from student_model.pt)
+        self.transformer = AutoModel.from_config(config)
         self.tabular_encoder = TabularEncoder(embed_dim=tabular_embed_dim)
-        hidden = cfg.hidden_size + tabular_embed_dim
+        hidden = config.hidden_size + tabular_embed_dim
         self.classifier = nn.Sequential(
             nn.Linear(hidden, 256), nn.LayerNorm(256), nn.ReLU(), nn.Dropout(dropout),
             nn.Linear(256, 128), nn.ReLU(), nn.Dropout(dropout),
             nn.Linear(128, num_classes),
         )
 
-    def forward(self, input_ids, attention_mask, ext_indices, continuous_feats):
+    def _text(self, input_ids, attention_mask):
         out = self.transformer(input_ids=input_ids, attention_mask=attention_mask)
-        text = out.pooler_output if getattr(out, "pooler_output", None) is not None else out.last_hidden_state[:, 0, :]
+        return (
+            out.pooler_output
+            if getattr(out, "pooler_output", None) is not None
+            else out.last_hidden_state[:, 0, :]
+        )
+
+    def fused(self, input_ids, attention_mask, ext_indices, continuous_feats):
+        text = self._text(input_ids, attention_mask)
         tab = self.tabular_encoder(ext_indices, continuous_feats)
-        return self.classifier(torch.cat([text, tab], dim=-1))
+        return torch.cat([text, tab], dim=-1)
+
+    def forward(self, input_ids, attention_mask, ext_indices, continuous_feats):
+        return self.classifier(
+            self.fused(input_ids, attention_mask, ext_indices, continuous_feats)
+        )
 
 
-# order locked to the trained checkpoint — don't reshuffle
 COMMON_EXTENSIONS = [
     "<PAD>", ".pdf", ".tex", ".bib", ".txt", ".md", ".csv", ".xlsx", ".json", ".jsonl",
     ".parquet", ".py", ".ipynb", ".sh", ".js", ".ts", ".html", ".css", ".cpp", ".c", ".h",
@@ -69,7 +103,7 @@ COMMON_EXTENSIONS = [
 
 
 class Student:
-    def __init__(self, taxonomy=None, base_model="distilbert-base-uncased"):
+    def __init__(self, taxonomy=None, base_model=BASE_MODEL, ckpt: str | Path | None = None):
         self.taxonomy = taxonomy or Taxonomy()
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
@@ -80,9 +114,21 @@ class Student:
         self.label2idx = self.taxonomy.label_to_idx()
         self.idx2label = self.taxonomy.idx_to_label()
         self.ext2idx = {e: i for i, e in enumerate(COMMON_EXTENSIONS)}
-        self.tokenizer = _hf(AutoTokenizer.from_pretrained, base_model)
-        self.model = StudentNet(base_model, self.taxonomy.num_classes)
+        ckpt_path = Path(ckpt) if ckpt else None
+        try:
+            cfg = _load_config(base_model, ckpt_path)
+            self.tokenizer = _load_tokenizer(base_model, ckpt_path)
+            self.model = StudentNet(cfg, self.taxonomy.num_classes)
+        except Exception as exc:
+            raise RuntimeError(
+                "Could not build DistilBERT student.\n"
+                "Fix: ensure artifacts/student_model_ckpt/ has config.json + tokenizer files,\n"
+                "or run once online so Hugging Face can cache distilbert-base-uncased.\n"
+                f"Original error: {exc}"
+            ) from exc
         self.model.to(self.device)
+        if ckpt_path and (ckpt_path / "student_model.pt").exists():
+            self.load(str(ckpt_path))
 
     def preprocess(self, states: list[FileState]) -> dict:
         texts = [
@@ -112,7 +158,8 @@ class Student:
             "targets": torch.tensor(targets, dtype=torch.long, device=self.device),
         }
 
-    def predict(self, state: FileState):
+    def predict_probs(self, state: FileState):
+        """Softmax over the locked KD taxonomy head (fixed num_classes)."""
         self.model.eval()
         with torch.no_grad():
             batch = self.preprocess([state])
@@ -120,21 +167,54 @@ class Student:
                 batch["input_ids"], batch["attention_mask"],
                 batch["ext_indices"], batch["continuous_feats"],
             )
-            probs = F.softmax(logits, dim=-1)[0].cpu().numpy()
-        i = int(probs.argmax())
-        return self.idx2label[i], float(probs[i])
+            probs = F.softmax(logits, dim=-1)[0].cpu()
+        return {self.idx2label[i]: float(probs[i]) for i in range(probs.numel())}
+
+    def predict(self, state: FileState):
+        probs = self.predict_probs(state)
+        label = max(probs, key=probs.get)
+        return label, float(probs[label])
+
+    def encode_texts(self, texts: list[str]) -> torch.Tensor:
+        """L2-normalized DistilBERT CLS vectors — used for open-vocab folder routing."""
+        self.model.eval()
+        with torch.no_grad():
+            enc = self.tokenizer(
+                texts, padding=True, truncation=True, max_length=64, return_tensors="pt"
+            )
+            ids = enc["input_ids"].to(self.device)
+            mask = enc["attention_mask"].to(self.device)
+            vec = self.model._text(ids, mask)
+            return F.normalize(vec, dim=-1).cpu()
+
+    def encode_file(self, state: FileState) -> torch.Tensor:
+        """L2-normalized fused file vector (text CLS + tabular) for custom-folder similarity."""
+        self.model.eval()
+        with torch.no_grad():
+            batch = self.preprocess([state])
+            fused = self.model.fused(
+                batch["input_ids"], batch["attention_mask"],
+                batch["ext_indices"], batch["continuous_feats"],
+            )
+            text = fused[:, : self.model.transformer.config.hidden_size]
+            return F.normalize(text, dim=-1)[0].cpu()
 
     def save(self, path: str):
         p = Path(path)
         p.mkdir(parents=True, exist_ok=True)
         torch.save(self.model.state_dict(), p / "student_model.pt")
         self.tokenizer.save_pretrained(str(p))
+        self.model.transformer.config.save_pretrained(str(p))
 
     def load(self, path: str):
         weight = Path(path) / "student_model.pt"
-        if weight.exists():
-            try:
-                state = torch.load(weight, map_location=self.device, weights_only=True)
-            except TypeError:
-                state = torch.load(weight, map_location=self.device)
-            self.model.load_state_dict(state)
+        if not weight.exists():
+            raise FileNotFoundError(
+                f"missing weights: {weight}\n"
+                "student_model.pt is ~250MB and gitignored — copy it into artifacts/student_model_ckpt/"
+            )
+        try:
+            state = torch.load(weight, map_location=self.device, weights_only=True)
+        except TypeError:
+            state = torch.load(weight, map_location=self.device)
+        self.model.load_state_dict(state)

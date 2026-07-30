@@ -7,9 +7,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from core.cascade import Cascade
+from core.custom_route import CustomRouter, get_router
 from core.model import Student
 from core.scan import FileState, scan_folder
-from core.user_bins import apply_bins, folder_map, load_prefs
+from core.user_bins import apply_bins, custom_folders, folder_descriptions, folder_map, load_prefs
 
 COPY_SKIP = shutil.ignore_patterns(".git", "__pycache__", ".venv", ".DS_Store", "node_modules")
 
@@ -17,6 +18,11 @@ SOURCE_TOPS = frozenset({
     "ignored_files", "partial_sync", "conflicted_copies", "shared_with_me",
     "multi_device", "from_inbox", "from_spam", "from_sent",
     "attachments_by_date", "extracted_zips",
+})
+
+DUMP_TOPS = frozenset({
+    "downloads", "download", "desktop", "documents", "inbox", "tmp", "temp",
+    "misc", "new folder", "new folder (2)",
 })
 
 SYNC_MARKER_RE = re.compile(
@@ -43,6 +49,7 @@ EXT_OVERRIDE = {
     ".mp4": "media/audio_video", ".mov": "media/audio_video",
     ".mp3": "media/audio_video", ".wav": "media/audio_video",
     ".zip": "archives", ".rar": "archives", ".7z": "archives",
+    ".dmg": "archives", ".iso": "archives",
     ".csv": "data/datasets", ".parquet": "data/datasets", ".tsv": "data/datasets",
 }
 
@@ -66,13 +73,17 @@ class Plan:
 
 
 def load_student(ckpt="artifacts/student_model_ckpt", quiet: bool = False):
-    s = Student()
-    if Path(ckpt).exists():
-        s.load(ckpt)
-        if not quiet:
-            print("loaded", ckpt)
-    elif not quiet:
-        print("warning: missing ckpt at", ckpt)
+    path = Path(ckpt)
+    weight = path / "student_model.pt"
+    if not weight.exists():
+        raise FileNotFoundError(
+            f"missing weights: {weight}\n"
+            "Copy student_model.pt (~250MB) into artifacts/student_model_ckpt/ "
+            "(it is gitignored and not in the repo)."
+        )
+    s = Student(ckpt=path)
+    if not quiet:
+        print("loaded", path)
     return s
 
 
@@ -140,7 +151,9 @@ def _project_roots(states: list[FileState]) -> dict[str, str]:
         if not any(m.lower() in names for m in PROJECT_MARKERS):
             continue
         top = parent.split("/")[0] if parent not in (".", "") else ""
-        if top in SOURCE_TOPS:
+        if top.lower() in SOURCE_TOPS or top.lower() in DUMP_TOPS:
+            continue
+        if parent.lower() in DUMP_TOPS or Path(parent).name.lower() in DUMP_TOPS:
             continue
         proj = parent if parent not in (".", "") else "."
         for f in files:
@@ -148,9 +161,48 @@ def _project_roots(states: list[FileState]) -> dict[str, str]:
     return members
 
 
+def _resolve_folder(
+    state: FileState,
+    cat: str,
+    conf: float,
+    *,
+    router: CustomRouter | None,
+    fmap: dict[str, str],
+    unknown: str,
+    conf_threshold: float,
+    force: bool,
+    probs: dict[str, float] | None = None,
+    hard_seed: bool = False,
+) -> tuple[str, float]:
+    """Pick destination folder — custom open-vocab taxonomy OR default/rename map."""
+    if router is not None:
+        if hard_seed or (force and cat):
+            folder = router.map_category(cat)
+            return folder, max(conf, 0.85)
+        seed = unknown if (conf < conf_threshold and not force) else cat
+        folder, rconf = router.route(
+            state,
+            seed_category=seed,
+            probs=probs,
+            hard_seed=False,
+        )
+        if conf < conf_threshold and not force:
+            return folder, max(rconf, 0.40)
+        return folder, max(conf, rconf)
+
+    folder = apply_bins(cat, fmap)
+    if conf < conf_threshold and not force:
+        folder = apply_bins(unknown, fmap)
+        conf = max(conf, 0.40)
+    return folder, conf
+
+
 def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Plan:
     prefs = load_prefs()
     fmap = folder_map(prefs)
+    folders = custom_folders(prefs)
+    descs = folder_descriptions(prefs)
+    router = get_router(student, folders, descriptions=descs) if folders else None
     cascade = Cascade(student, threshold=max(conf_threshold, 0.65))
     root_path = Path(root).resolve()
     plan = Plan(root=str(root_path))
@@ -190,27 +242,43 @@ def build_plan(root: str, student: Student, conf_threshold: float = 0.50) -> Pla
         cat, conf = d.category, d.confidence
         ext = (state.metadata.extension or "").lower()
         is_sync = _is_sync_marker(state.metadata.filename)
+        probs = d.probs
+        hard_seed = d.tier == "heuristic"
 
         if is_sync:
-            cat = "data/datasets"
+            cat = "misc/uncategorized"
             conf = max(conf, 0.90)
+            hard_seed = True
         elif ext in EXT_OVERRIDE and not any(
             x in state.metadata.filename.lower()
             for x in ("untitled", "temp", "download", "file", "document", "empty")
         ):
             cat = EXT_OVERRIDE[ext]
+            hard_seed = True
 
-        folder = apply_bins(cat, fmap)
         src_top = Path(state.relative_path).parts[0] if Path(state.relative_path).parts else ""
         force = src_top in SOURCE_TOPS or is_sync
 
-        if conf < conf_threshold and not force:
-            folder = apply_bins(student.taxonomy.unknown_class, fmap)
-            conf = max(conf, 0.40)
+        folder, conf = _resolve_folder(
+            state,
+            cat,
+            conf,
+            router=router,
+            fmap=fmap,
+            unknown=student.taxonomy.unknown_class,
+            conf_threshold=conf_threshold,
+            force=force,
+            probs=probs,
+            hard_seed=hard_seed,
+        )
 
         proj = project_map.get(state.relative_path)
         if proj and proj not in (".", "") and Path(proj).parts[0] not in SOURCE_TOPS:
-            keep = apply_bins("code/projects", fmap)
+            keep = (
+                router.map_category("code/projects")
+                if router is not None
+                else apply_bins("code/projects", fmap)
+            )
             anchor = Path(proj).name
             try:
                 within = Path(state.relative_path).relative_to(proj)

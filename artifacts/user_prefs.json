@@ -1,7 +1,10 @@
 {
   "user_bins": {
-    "enabled": true,
-    "folder_map": {}
+    "enabled": false,
+    "mode": "edit",
+    "folders": [],
+    "folder_map": {},
+    "descriptions": {}
   },
   "preferred_category_names": {},
   "rename_style": "normalize_noise",

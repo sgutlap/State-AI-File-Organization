@@ -12,6 +12,7 @@ EXT_RULES = {
     ".mp4": "media/audio_video", ".mov": "media/audio_video", ".mkv": "media/audio_video",
     ".mp3": "media/audio_video", ".wav": "media/audio_video",
     ".zip": "archives", ".rar": "archives", ".7z": "archives", ".tgz": "archives",
+    ".dmg": "archives", ".iso": "archives",
     ".py": "code/projects", ".ipynb": "code/projects", ".js": "code/projects",
     ".ts": "code/projects", ".tsx": "code/projects", ".jsx": "code/projects",
     ".rs": "code/projects", ".go": "code/projects", ".java": "code/projects",
@@ -28,6 +29,7 @@ class Decision:
     category: str
     confidence: float
     tier: str
+    probs: dict[str, float] | None = None
 
 
 class Cascade:
@@ -49,5 +51,6 @@ class Cascade:
             if use:
                 return Decision(EXT_RULES[ext], 0.95, "heuristic")
 
-        cat, conf = self.student.predict(state)
-        return Decision(cat, float(conf), "student")
+        probs = self.student.predict_probs(state)
+        cat = max(probs, key=probs.get)
+        return Decision(cat, float(probs[cat]), "student", probs)

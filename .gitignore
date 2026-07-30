@@ -4,6 +4,11 @@ __pycache__/
 .DS_Store
 artifacts/student_model_ckpt/*.pt
 artifacts/ui_runs/
+artifacts/_*/
+artifacts/user_prefs.json
+Supa Messy Folder/
+DEMO_Desktop_Mess/
+Messy-Folder/
 .env
 .env.*
 *.pem

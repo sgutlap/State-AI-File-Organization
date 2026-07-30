@@ -7,8 +7,14 @@ from pathlib import Path
 import streamlit as st
 
 from core.moves import apply_plan, build_plan, load_student
-from core.taxonomy import list_categories
-from core.user_bins import folder_map, load_prefs, save_prefs, set_bin
+from core.user_bins import (
+    active_folders,
+    clear_bins,
+    default_folders,
+    is_customized,
+    load_prefs,
+    set_active_folders,
+)
 
 ROOT = Path(__file__).resolve().parent
 CKPT = ROOT / "artifacts" / "student_model_ckpt"
@@ -31,28 +37,51 @@ def main():
     folder_in = st.text_input("folder", value=str((ROOT / "Messy-Folder").resolve()))
     edit_here = st.checkbox("edit this folder", value=False)
 
-    with st.expander("custom folders (optional)"):
+    with st.expander("Taxonomy", expanded=True):
         prefs = load_prefs()
-        bins_on = st.checkbox(
-            "use my own folder names",
-            value=bool((prefs.get("user_bins") or {}).get("enabled")),
+        stock = default_folders()
+        current = active_folders(prefs)
+        customized = is_customized(prefs)
+
+        st.caption(
+            "Starts as the default taxonomy. Add lines, delete lines, or rename — "
+            "then save. This is the full set of folders files can go into."
         )
-        student = get_student()
-        fmap = folder_map(prefs)
-        edits = {}
-        for tid in student.taxonomy.classes:
-            edits[tid] = st.text_input(tid, value=fmap.get(tid, tid), key=f"bin_{tid}")
-        if st.button("save folder names"):
-            if bins_on:
-                for tid, folder in edits.items():
-                    if folder.strip():
-                        set_bin(tid, folder.strip(), enable=True)
+        folders_text = st.text_area(
+            "one folder per line",
+            value="\n".join(current),
+            height=180,
+            key="dest_folders_text",
+            help="Default bins stay unless you delete them. New names are added on.",
+        )
+        c1, c2 = st.columns(2)
+        if c1.button("save destinations", type="primary"):
+            parsed = [ln.strip() for ln in folders_text.splitlines() if ln.strip()]
+            if not parsed:
+                st.error("need at least one destination folder")
             else:
-                prefs = load_prefs()
-                prefs.setdefault("user_bins", {})["enabled"] = False
-                save_prefs(prefs)
-            st.success("saved")
+                set_active_folders(parsed)
+                if set(parsed) == set(stock):
+                    st.success("stock default taxonomy")
+                else:
+                    added = [f for f in parsed if f not in stock]
+                    removed = [f for f in stock if f not in parsed]
+                    bits = []
+                    if added:
+                        bits.append("added " + ", ".join(added))
+                    if removed:
+                        bits.append("removed " + ", ".join(removed))
+                    st.success(" · ".join(bits) if bits else "destinations saved")
+                st.rerun()
+        if c2.button("revert to default"):
+            clear_bins()
+            st.success("reverted to default taxonomy")
             st.rerun()
+
+        if customized:
+            st.caption("active → " + " · ".join(current))
+        else:
+            st.caption("active → default taxonomy")
 
     if not st.button("run", type="primary"):
         return
@@ -84,10 +113,11 @@ def main():
         n = apply_plan(plan)
         ms = (time.perf_counter() - t0) * 1000
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("time", f"{ms:.0f} ms")
     c2.metric("moves", n)
     c3.metric("planned", len(plan.moves))
+    c4.metric("taxonomy", "customized" if is_customized() else "default")
 
     left, right = st.columns(2)
     with left:
@@ -99,7 +129,8 @@ def main():
     with right:
         st.markdown("**after**")
         try:
-            st.code("\n".join(sorted(p.name for p in work.iterdir())[:25]) or "(empty)")
+            tops = sorted(p.name for p in work.iterdir())
+            st.code("\n".join(tops[:25]) or "(empty)")
         except OSError:
             st.code("(can't list)")
 
@@ -108,7 +139,7 @@ def main():
         st.code(
             "\n".join(
                 f"{Path(m.src).name}  →  {m.category}"
-                for m in plan.moves[:40]
+                for m in plan.moves[:50]
             )
         )
 

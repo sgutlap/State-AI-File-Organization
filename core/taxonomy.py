@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from core.user_bins import apply_bins, folder_map, load_prefs
+from core.user_bins import active_folders, apply_bins, custom_folders, folder_map, load_prefs
 
 CUSTOM_PATH = Path(__file__).resolve().parent.parent / "custom_taxonomy.yaml"
 
@@ -37,8 +37,11 @@ def load_custom(path=CUSTOM_PATH):
 
 
 def list_categories(taxonomy_yaml_path=None, custom_path=CUSTOM_PATH):
+    prefs = load_prefs()
+    if custom_folders(prefs):
+        return active_folders(prefs)
     tax = Taxonomy(taxonomy_yaml_path)
-    fmap = folder_map(load_prefs())
+    fmap = folder_map(prefs)
     out, seen = [], set()
     for c in [apply_bins(x, fmap) for x in tax.classes] + load_custom(custom_path):
         if c not in seen:
