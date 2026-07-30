@@ -5,16 +5,15 @@ import tkinter as tk
 import urllib.error
 import urllib.request
 from pathlib import Path
-from tkinter import messagebox, simpledialog, ttk
+from tkinter import messagebox, ttk
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-ADD_NEW = "+ new folder..."
 SERVE_URL = "http://127.0.0.1:18765"
 
 
 def _plan_via_server(folder: str, threshold: float = 0.5):
-    """Use warm serve.py if running — keeps Windows UI snappy."""
+    """Use warm serve.py if running to keep the Windows UI snappy."""
     from core.moves import Move, Plan
 
     payload = json.dumps({"folder": folder, "threshold": threshold}).encode()
@@ -31,19 +30,20 @@ def _plan_via_server(folder: str, threshold: float = 0.5):
         return None
     if not data.get("ok"):
         return None
+
     plan = Plan(root=str(data.get("root") or folder))
     plan.dirs = list(data.get("dirs") or [])
-    for m in data.get("moves") or []:
+    for move in data.get("moves") or []:
         plan.moves.append(
             Move(
-                src=str(m["src"]),
-                dst=str(m["dst"]),
-                category=str(m.get("category") or ""),
-                confidence=float(m.get("confidence") or 0),
-                tier=str(m.get("tier") or "student"),
+                src=str(move["src"]),
+                dst=str(move["dst"]),
+                category=str(move.get("category") or ""),
+                confidence=float(move.get("confidence") or 0),
+                tier=str(move.get("tier") or "student"),
             )
         )
-    return plan, list(data.get("taxonomy") or [])
+    return plan
 
 
 def main():
@@ -51,237 +51,218 @@ def main():
         print("Usage: python frontend.py <folder>")
         sys.exit(1)
 
-    folder_path = sys.argv[1]
+    folder_path = str(Path(sys.argv[1]).resolve())
     if not Path(folder_path).is_dir():
         messagebox.showerror("Organize", f"Not a folder:\n{folder_path}")
         sys.exit(1)
-
-    splash = tk.Tk()
-    splash.title("Organize")
-    splash.geometry("280x90")
-    splash.resizable(False, False)
-    splash_lbl = tk.Label(splash, text="Looking at files...", font=("Segoe UI", 10))
-    splash_lbl.pack(expand=True)
-    splash.update()
 
     root_dir = Path(__file__).resolve().parent
     os.chdir(root_dir)
     sys.path.insert(0, str(root_dir))
 
     from core.moves import apply_plan, build_plan, load_student
-    from core.taxonomy import Taxonomy, add_category, list_categories
-    from core.user_bins import folder_map, load_prefs, save_prefs, set_bin
-
-    warmed = _plan_via_server(folder_path)
-    if warmed is not None:
-        plan, tax_ids = warmed
-        splash_lbl.config(text="Ready (warm server)")
-        splash.update()
-    else:
-        splash_lbl.config(text="Loading model...")
-        splash.update()
-        student = load_student(str(root_dir / "artifacts" / "student_model_ckpt"), quiet=True)
-        plan = build_plan(folder_path, student)
-        tax_ids = list(student.taxonomy.classes)
-
-    if not tax_ids:
-        tax_ids = list(Taxonomy().classes)
-    plan_root = Path(plan.root)
-    splash.destroy()
-
-    if not plan.moves:
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showinfo("Organize", "Nothing to move.")
-        return
+    from core.taxonomy import list_categories
+    from core.user_bins import normalize_folder
 
     categories = list_categories()
-    prefs = load_prefs()
-    bins_on = bool((prefs.get("user_bins") or {}).get("enabled"))
+    original_categories = set(categories)
+    plan = None
 
     root = tk.Tk()
     root.title("Organize")
-    root.geometry("680x500")
-    root.minsize(520, 360)
+    root.geometry("700x520")
+    root.minsize(560, 400)
 
-    top = tk.Frame(root, padx=10, pady=8)
-    top.pack(fill="x")
-    tk.Label(top, text=f"{len(plan.moves)} files to move", font=("Segoe UI", 12, "bold")).pack(anchor="w")
-    tk.Label(top, text=folder_path, font=("Segoe UI", 8), fg="#555").pack(anchor="w")
+    content = tk.Frame(root, padx=14, pady=12)
+    content.pack(fill="both", expand=True)
 
-    bins_frame = tk.LabelFrame(root, text="custom folders (optional)", padx=8, pady=4)
-    bins_frame.pack(fill="x", padx=10, pady=4)
-    bins_var = tk.BooleanVar(value=bins_on)
-    fmap = folder_map(prefs)
-    tax_var = tk.StringVar(value=tax_ids[0] if tax_ids else "")
-    folder_var = tk.StringVar(value=fmap.get(tax_var.get(), tax_var.get()))
-    combos: list[ttk.Combobox] = []
-    status = tk.StringVar(value="")
+    def clear_content():
+        root.unbind_all("<MouseWheel>")
+        for child in content.winfo_children():
+            child.destroy()
 
-    def refresh_categories():
-        categories.clear()
-        categories.extend(list_categories())
-        for c in combos:
-            cur = c.get()
-            c["values"] = categories + [ADD_NEW]
-            if cur in categories:
-                c.set(cur)
+    def destination_for(move, category: str) -> Path:
+        destination = Path(folder_path) / category / Path(move.dst).name
+        used = {m.dst for m in plan.moves if m is not move}
+        number = 1
+        while str(destination) in used or (
+            destination.exists() and destination.resolve() != Path(move.src).resolve()
+        ):
+            destination = destination.with_name(
+                f"{Path(move.dst).stem}_{number}{Path(move.dst).suffix}"
+            )
+            number += 1
+        return destination
 
-    def toggle_bins():
-        p = load_prefs()
-        ub = dict(p.get("user_bins") or {"enabled": False, "folder_map": {}})
-        ub["enabled"] = bool(bins_var.get())
-        p["user_bins"] = ub
-        save_prefs(p)
-        refresh_categories()
-        status.set("custom folders on" if ub["enabled"] else "custom folders off")
+    def fit_plan_to_taxonomy():
+        if not categories:
+            return
+        fallback = "misc/uncategorized" if "misc/uncategorized" in categories else categories[0]
+        for move in plan.moves:
+            if move.category in original_categories and move.category not in categories:
+                move.category = fallback
+                move.dst = str(destination_for(move, fallback))
+        plan.dirs = sorted({str(Path(move.dst).parent) for move in plan.moves})
 
-    tk.Checkbutton(
-        bins_frame,
-        text="use my own folder names",
-        variable=bins_var,
-        command=toggle_bins,
-        font=("Segoe UI", 9),
-    ).pack(anchor="w")
+    def render_done(moved: int):
+        clear_content()
+        panel = tk.Frame(content)
+        panel.pack(expand=True)
+        tk.Label(panel, text="Organization complete", font=("Segoe UI", 16, "bold")).pack(pady=6)
+        tk.Label(panel, text=f"Moved {moved} files.", font=("Segoe UI", 10)).pack(pady=4)
+        tk.Button(panel, text="Done", command=root.destroy, width=14).pack(pady=18)
 
-    map_row = tk.Frame(bins_frame)
-    map_row.pack(fill="x", pady=2)
-    ttk.Combobox(map_row, textvariable=tax_var, values=tax_ids, width=20, state="readonly").pack(
-        side="left", padx=(0, 4)
-    )
-    tk.Label(map_row, text="→").pack(side="left")
-    tk.Entry(map_row, textvariable=folder_var, width=20).pack(side="left", padx=4)
-
-    def on_tax_pick(*_):
-        folder_var.set(fmap.get(tax_var.get(), tax_var.get()))
-
-    tax_var.trace_add("write", on_tax_pick)
-
-    def save_one_bin():
-        tax_id = tax_var.get()
-        new_folder = folder_var.get().strip()
-        old_folder = fmap.get(tax_id, tax_id)
+    def apply_changes():
         try:
-            set_bin(tax_id, new_folder, enable=True)
-            bins_var.set(True)
-            fmap.clear()
-            fmap.update(folder_map())
-            refresh_categories()
-            for m in plan.moves:
-                if m.category in (tax_id, old_folder):
-                    m.category = new_folder
-                    name = Path(m.dst).name
-                    dest_dir = plan_root / new_folder
-                    dest = dest_dir / name
-                    n = 1
-                    while dest.exists() and dest.resolve() != Path(m.src).resolve():
-                        dest = dest_dir / f"{Path(name).stem}_{n}{Path(name).suffix}"
-                        n += 1
-                    m.dst = str(dest)
-            for c, m in zip(combos, plan.moves):
-                c.set(m.category)
-            status.set(f"{tax_id} → {new_folder}")
-        except ValueError as e:
-            messagebox.showerror("Organize", str(e))
+            plan.dirs = sorted({str(Path(move.dst).parent) for move in plan.moves})
+            moved = apply_plan(plan)
+        except OSError as error:
+            messagebox.showerror("Organize", f"Could not apply changes:\n{error}", parent=root)
+            return
+        render_done(moved)
 
-    tk.Button(map_row, text="save", command=save_one_bin).pack(side="left", padx=2)
+    def render_review():
+        clear_content()
 
-    container = tk.Frame(root)
-    container.pack(fill="both", expand=True, padx=10, pady=4)
-    canvas = tk.Canvas(container, highlightthickness=0)
-    scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
-    rows = tk.Frame(canvas)
-    rows.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    canvas.create_window((0, 0), window=rows, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
+        tk.Label(content, text="Review proposed changes", font=("Segoe UI", 14, "bold")).pack(anchor="w")
+        tk.Label(
+            content,
+            text=f"{len(plan.moves)} files will be moved. Nothing changes until you click Apply.",
+            font=("Segoe UI", 9),
+            fg="#555",
+        ).pack(anchor="w", pady=(2, 10))
 
-    def on_wheel(event):
-        delta = -1 * int(event.delta / 120) if event.delta else 0
-        if delta:
-            canvas.yview_scroll(delta, "units")
+        container = tk.Frame(content)
+        container.pack(fill="both", expand=True)
+        canvas = tk.Canvas(container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        rows = tk.Frame(canvas)
+        rows.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=rows, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
-    canvas.bind_all("<MouseWheel>", on_wheel)
+        header = tk.Frame(rows)
+        header.pack(fill="x")
+        tk.Label(header, text="File", width=38, anchor="w", font=("Segoe UI", 9, "bold")).pack(side="left")
+        tk.Label(header, text="Move to", width=30, anchor="w", font=("Segoe UI", 9, "bold")).pack(side="left")
 
-    hdr = tk.Frame(rows)
-    hdr.pack(fill="x")
-    tk.Label(hdr, text="file", width=34, anchor="w", font=("Segoe UI", 9, "bold")).pack(side="left")
-    tk.Label(hdr, text="put in", width=28, anchor="w", font=("Segoe UI", 9, "bold")).pack(side="left")
+        for move in plan.moves:
+            row = tk.Frame(rows)
+            row.pack(fill="x", pady=1)
+            tk.Label(row, text=Path(move.src).name, width=38, anchor="w", font=("Segoe UI", 9)).pack(
+                side="left", padx=(0, 6)
+            )
+            combo = ttk.Combobox(row, values=categories, width=30, state="readonly", font=("Segoe UI", 9))
+            combo.set(move.category)
+            combo.pack(side="left")
 
-    def dest_for(move, category: str) -> Path:
-        dest_dir = plan_root / category
-        dest = dest_dir / Path(move.src).name
-        n = 1
-        while dest.exists() and dest.resolve() != Path(move.src).resolve():
-            dest = dest_dir / f"{Path(move.src).stem}_{n}{Path(move.src).suffix}"
-            n += 1
-        return dest
+            def change_destination(_event, selected=combo, selected_move=move):
+                selected_move.category = selected.get()
+                selected_move.dst = str(destination_for(selected_move, selected.get()))
 
-    def on_combo(_e, combo, move):
-        choice = combo.get()
-        if choice == ADD_NEW:
-            name = simpledialog.askstring("New folder", "folder name:", parent=root)
-            if name and name.strip():
-                try:
-                    add_category(name, folder_path)
-                except ValueError as err:
-                    messagebox.showerror("Organize", str(err))
-                    combo.set(move.category)
-                    return
-                if name not in categories:
-                    categories.append(name)
-                for c in combos:
-                    c["values"] = categories + [ADD_NEW]
-                combo.set(name)
-                move.category = name
-                move.dst = str(dest_for(move, name))
-            else:
-                combo.set(move.category)
+            combo.bind("<<ComboboxSelected>>", change_destination)
+
+        def on_wheel(event):
+            if event.delta:
+                canvas.yview_scroll(-1 * int(event.delta / 120), "units")
+
+        canvas.bind_all("<MouseWheel>", on_wheel)
+
+        buttons = tk.Frame(content, pady=10)
+        buttons.pack()
+        tk.Button(buttons, text="Edit taxonomy", command=render_taxonomy, width=14).pack(side="left", padx=4)
+        tk.Button(buttons, text="Apply", command=apply_changes, width=12, bg="#c8e6c9").pack(side="left", padx=4)
+        tk.Button(buttons, text="Cancel", command=root.destroy, width=10).pack(side="left", padx=4)
+
+    def organize_files(status_label):
+        nonlocal plan
+        if not categories:
+            messagebox.showerror("Organize", "Add at least one taxonomy bin first.", parent=root)
+            return
+
+        status_label.config(text="Looking for files...")
+        root.update_idletasks()
+        warmed = _plan_via_server(folder_path)
+        if warmed is not None:
+            plan = warmed
         else:
-            move.category = choice
-            move.dst = str(dest_for(move, choice))
+            status_label.config(text="Loading model and looking for files...")
+            root.update_idletasks()
+            student = load_student(str(root_dir / "artifacts" / "student_model_ckpt"), quiet=True)
+            plan = build_plan(folder_path, student)
+        fit_plan_to_taxonomy()
+        render_review()
 
-    for move in plan.moves:
-        row = tk.Frame(rows)
-        row.pack(fill="x", pady=1)
-        tk.Label(row, text=Path(move.src).name, width=34, anchor="w", font=("Segoe UI", 9)).pack(
-            side="left", padx=(0, 6)
-        )
-        combo = ttk.Combobox(
-            row, values=categories + [ADD_NEW], width=28, state="readonly", font=("Segoe UI", 9)
-        )
-        combo.set(move.category)
-        combo.pack(side="left")
-        combo.bind("<<ComboboxSelected>>", lambda e, c=combo, m=move: on_combo(e, c, m))
-        combos.append(combo)
+    def render_taxonomy():
+        clear_content()
 
-    tk.Label(root, textvariable=status, font=("Segoe UI", 8), fg="#666").pack(anchor="w", padx=10)
+        tk.Label(content, text="Edit taxonomy", font=("Segoe UI", 14, "bold")).pack(anchor="w")
+        tk.Label(
+            content,
+            text="Add or remove destination bins before organizing your files.",
+            font=("Segoe UI", 9),
+            fg="#555",
+        ).pack(anchor="w", pady=(2, 10))
 
-    btns = tk.Frame(root, pady=8)
-    btns.pack()
+        list_frame = tk.Frame(content)
+        list_frame.pack(fill="both", expand=True)
+        listbox = tk.Listbox(list_frame, font=("Segoe UI", 10), selectmode="extended")
+        list_scroll = ttk.Scrollbar(list_frame, orient="vertical", command=listbox.yview)
+        listbox.configure(yscrollcommand=list_scroll.set)
+        listbox.pack(side="left", fill="both", expand=True)
+        list_scroll.pack(side="right", fill="y")
 
-    def on_apply():
-        plan.dirs = sorted({str(Path(m.dst).parent) for m in plan.moves})
-        n = apply_plan(plan)
-        messagebox.showinfo("Done", f"Moved {n} files.")
-        root.destroy()
+        def refresh_list():
+            listbox.delete(0, "end")
+            for category in categories:
+                listbox.insert("end", category)
 
-    def on_add():
-        name = simpledialog.askstring("New folder", "folder name:", parent=root)
-        if not name or not name.strip():
-            return
-        try:
-            add_category(name, folder_path)
-        except ValueError as err:
-            messagebox.showerror("Organize", str(err))
-            return
-        refresh_categories()
+        refresh_list()
 
-    tk.Button(btns, text="+ folder", command=on_add, width=10).pack(side="left", padx=3)
-    tk.Button(btns, text="Apply", command=on_apply, width=12, bg="#c8e6c9").pack(side="left", padx=3)
-    tk.Button(btns, text="Cancel", command=root.destroy, width=10).pack(side="left", padx=3)
+        add_row = tk.Frame(content, pady=8)
+        add_row.pack(fill="x")
+        new_category = tk.StringVar()
+        entry = tk.Entry(add_row, textvariable=new_category, font=("Segoe UI", 10))
+        entry.pack(side="left", fill="x", expand=True)
 
+        def add_bin(_event=None):
+            try:
+                category = normalize_folder(new_category.get())
+            except ValueError as error:
+                messagebox.showerror("Organize", str(error), parent=root)
+                return
+            if category not in categories:
+                categories.append(category)
+                refresh_list()
+            new_category.set("")
+            entry.focus_set()
+
+        def remove_bins():
+            for index in reversed(listbox.curselection()):
+                categories.pop(index)
+            refresh_list()
+
+        entry.bind("<Return>", add_bin)
+        tk.Button(add_row, text="Add bin", command=add_bin, width=10).pack(side="left", padx=(6, 0))
+        tk.Button(add_row, text="Remove selected", command=remove_bins, width=15).pack(side="left", padx=(6, 0))
+
+        status = tk.Label(content, text="", font=("Segoe UI", 9), fg="#555")
+        status.pack(anchor="w")
+
+        buttons = tk.Frame(content, pady=10)
+        buttons.pack()
+        tk.Button(
+            buttons,
+            text="Organize files",
+            command=lambda: organize_files(status),
+            width=16,
+            bg="#c8e6c9",
+        ).pack(side="left", padx=4)
+        tk.Button(buttons, text="Cancel", command=root.destroy, width=10).pack(side="left", padx=4)
+
+    render_taxonomy()
     root.mainloop()
 
 

@@ -1,6 +1,6 @@
 {
   "user_bins": {
-    "enabled": false,
+    "enabled": true,
     "folder_map": {}
   },
   "preferred_category_names": {},
