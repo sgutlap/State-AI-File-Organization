@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 import tkinter as tk
 import urllib.error
 import urllib.request
@@ -12,9 +13,37 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 SERVE_URL = "http://127.0.0.1:18765"
 
 
-def _plan_via_server(folder: str, threshold: float = 0.5):
+def _server_health(timeout: float = 2.0):
+    try:
+        with urllib.request.urlopen(f"{SERVE_URL}/health", timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return None
+
+
+def _plan_via_server(folder: str, threshold: float = 0.5, on_wait=None):
     """Use warm serve.py if running to keep the Windows UI snappy."""
     from core.moves import Move, Plan
+
+    # Once serve.py owns the port, wait for its model rather than loading a
+    # duplicate copy in this process while the server is still starting.
+    deadline = time.monotonic() + 600
+    health = _server_health()
+    if health is None:
+        return None
+    waiting_notified = False
+    while not health.get("loaded"):
+        if health.get("state") == "error" or health.get("error"):
+            raise RuntimeError(health.get("error") or "The server model failed to load.")
+        if time.monotonic() >= deadline:
+            raise RuntimeError("Timed out waiting for serve.py to load the model.")
+        if on_wait is not None and not waiting_notified:
+            on_wait()
+            waiting_notified = True
+        time.sleep(0.25)
+        health = _server_health()
+        if health is None:
+            raise RuntimeError("serve.py stopped while loading the model.")
 
     payload = json.dumps({"folder": folder, "threshold": threshold}).encode()
     req = urllib.request.Request(
@@ -26,10 +55,16 @@ def _plan_via_server(folder: str, threshold: float = 0.5):
     try:
         with urllib.request.urlopen(req, timeout=600) as resp:
             data = json.loads(resp.read().decode())
-    except (urllib.error.URLError, TimeoutError, OSError):
-        return None
+    except urllib.error.HTTPError as error:
+        try:
+            detail = json.loads(error.read().decode()).get("error")
+        except (ValueError, OSError):
+            detail = None
+        raise RuntimeError(detail or f"serve.py returned HTTP {error.code}.") from error
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        raise RuntimeError("Lost the connection to serve.py while organizing.") from error
     if not data.get("ok"):
-        return None
+        raise RuntimeError(data.get("error") or "serve.py could not build a plan.")
 
     plan = Plan(root=str(data.get("root") or folder))
     plan.dirs = list(data.get("dirs") or [])
@@ -184,7 +219,19 @@ def main():
 
         status_label.config(text="Looking for files...")
         root.update_idletasks()
-        warmed = _plan_via_server(folder_path)
+
+        def show_server_wait():
+            status_label.config(text="Waiting for serve.py to finish loading the model...")
+            root.update_idletasks()
+
+        try:
+            warmed = _plan_via_server(
+                folder_path,
+                on_wait=show_server_wait,
+            )
+        except RuntimeError as error:
+            messagebox.showerror("Organize", str(error), parent=root)
+            return
         if warmed is not None:
             plan = warmed
         else:
