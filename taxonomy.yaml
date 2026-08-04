@@ -1,27 +1,51 @@
+version: "1.0"
 taxonomy:
-  - id: documents/research
-    name: Research
-    description: papers, notes, latex
-  - id: documents/financial
-    name: Financial
-    description: invoices, receipts, statements
-  - id: code/projects
-    name: Code
-    description: source + notebooks
-  - id: data/datasets
-    name: Data
-    description: csv/json/parquet etc
-  - id: media/images
-    name: Images
-    description: png jpg etc
-  - id: media/audio_video
-    name: Audio/Video
-    description: mp4 mp3 etc
-  - id: archives
-    name: Archives
-    description: zip rar etc
-  - id: misc/uncategorized
-    name: Misc
-    description: idk / low confidence
+  - id: "documents/research"
+    name: "Research & Academic Papers"
+    description: "Scientific papers, PDFs, research drafts, arXiv preprints, literature notes, LaTeX sources."
+    extensions: [".pdf", ".tex", ".bib", ".bibtex", ".md", ".txt"]
+    keywords: ["abstract", "paper", "arxiv", "theorem", "lemma", "experiment", "method", "dataset", "results"]
 
-unknown_class: misc/uncategorized
+  - id: "documents/financial"
+    name: "Financial & Legal Documents"
+    description: "Invoices, tax records, receipts, bank statements, contracts, budgets, financial reports."
+    extensions: [".pdf", ".csv", ".xlsx", ".xls", ".txt"]
+    keywords: ["invoice", "receipt", "statement", "tax", "w2", "payment", "bank", "budget", "contract", "legal"]
+
+  - id: "code/projects"
+    name: "Source Code & Scripts"
+    description: "Programming source files, shell scripts, notebooks, configuration files, and project code."
+    extensions: [".py", ".ipynb", ".cpp", ".c", ".h", ".java", ".js", ".ts", ".html", ".css", ".sh", ".rs", ".go"]
+    keywords: ["import", "def ", "class ", "function", "const", "let", "main", "return", "script", "config"]
+
+  - id: "data/datasets"
+    name: "Data & Datasets"
+    description: "Structured data, CSVs, JSON arrays, Parquet files, SQLite databases, logs, raw data exports."
+    extensions: [".csv", ".json", ".jsonl", ".parquet", ".db", ".sqlite", ".tsv", ".h5"]
+    keywords: ["dataset", "record", "timestamp", "row", "column", "data", "log", "export", "metrics"]
+
+  - id: "media/images"
+    name: "Images & Figures"
+    description: "Photos, diagrams, screenshots, figures, graphics, design assets."
+    extensions: [".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp", ".bmp", ".tiff"]
+    keywords: ["screenshot", "figure", "img", "photo", "diagram", "icon", "logo", "asset"]
+
+  - id: "media/audio_video"
+    name: "Audio & Video Recordings"
+    description: "Video recordings, lectures, meeting recordings, podcasts, audio clips."
+    extensions: [".mp4", ".mov", ".mkv", ".avi", ".mp3", ".wav", ".m4a", ".flac"]
+    keywords: ["recording", "lecture", "meeting", "audio", "video", "clip", "podcast"]
+
+  - id: "archives"
+    name: "Archives & Compressed Files"
+    description: "Zip archives, tarballs, compressed backups, packages."
+    extensions: [".zip", ".tar.gz", ".tgz", ".rar", ".7z", ".bz2", ".gz"]
+    keywords: ["archive", "backup", "bundle", "compressed", "dist"]
+
+  - id: "misc/uncategorized"
+    name: "Miscellaneous & Temporary Files"
+    description: "Temporary files, scratchpads, unclassifiable documents."
+    extensions: [".tmp", ".log", ".bak", ".swp"]
+    keywords: ["scratch", "temp", "draft", "notes", "todo"]
+
+unknown_class: "misc/uncategorized"

@@ -1,0 +1,1343 @@
+{
+  "timestamp": "2026-08-03T19:14:17Z",
+  "messy_dir": "Messy Folders (Test)/Messy Folder Test (Old one)",
+  "state_ai": {
+    "model": "State-AI (DistilBERT + Tabular MLP, 66M params)",
+    "total_files_scanned": 161,
+    "files_with_ground_truth": 133,
+    "correct": 105,
+    "accuracy": 0.7895,
+    "avg_latency_ms": 20.14,
+    "p95_latency_ms": 41.63,
+    "total_latency_ms": 3242.01,
+    "throughput_fps": 49.7,
+    "per_category_accuracy": {
+      "misc/uncategorized": 0.7812,
+      "data/datasets": 0.25,
+      "media/images": 1.0,
+      "archives": 1.0,
+      "documents/research": 0.7391,
+      "code/projects": 1.0
+    },
+    "confusion_matrix": {
+      "misc/uncategorized": {
+        "misc/uncategorized": 25,
+        "documents/research": 3,
+        "archives": 1,
+        "code/projects": 2,
+        "data/datasets": 1
+      },
+      "data/datasets": {
+        "code/projects": 7,
+        "misc/uncategorized": 2,
+        "data/datasets": 3
+      },
+      "media/images": {
+        "media/images": 10
+      },
+      "archives": {
+        "archives": 10
+      },
+      "documents/research": {
+        "documents/research": 34,
+        "misc/uncategorized": 11,
+        "code/projects": 1
+      },
+      "code/projects": {
+        "code/projects": 23
+      }
+    },
+    "tokens_used": 0,
+    "estimated_cost_usd": 0.0
+  },
+  "state_ai_details": [
+    {
+      "file": "Untitled Document",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.7626,
+      "latency_ms": 405.03
+    },
+    {
+      "file": "final_report_v2_FINAL (1).csv",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9817,
+      "latency_ms": 27.92
+    },
+    {
+      "file": "images (2).jpeg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.995,
+      "latency_ms": 26.72
+    },
+    {
+      "file": "noextension",
+      "predicted": "documents/research",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.8922,
+      "latency_ms": 36.9
+    },
+    {
+      "file": "Thumbs.db",
+      "predicted": "archives",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.599,
+      "latency_ms": 27.74
+    },
+    {
+      "file": "empty.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8445,
+      "latency_ms": 30.03
+    },
+    {
+      "file": "archive-final.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9445,
+      "latency_ms": 21.14
+    },
+    {
+      "file": "backup-2024-06-15.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.898,
+      "latency_ms": 27.16
+    },
+    {
+      "file": "untitled document (1)",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8101,
+      "latency_ms": 12.17
+    },
+    {
+      "file": "document.pdf",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9246,
+      "latency_ms": 24.56
+    },
+    {
+      "file": "app.bundle.js",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.983,
+      "latency_ms": 23.82
+    },
+    {
+      "file": "empty.json",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.8084,
+      "latency_ms": 21.12
+    },
+    {
+      "file": "project_plan (2).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9094,
+      "latency_ms": 41.63
+    },
+    {
+      "file": "config (1).json",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9833,
+      "latency_ms": 11.22
+    },
+    {
+      "file": "DOCKER-COMPOSE.yaml",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9828,
+      "latency_ms": 21.07
+    },
+    {
+      "file": ".env.production",
+      "predicted": "documents/research",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9102,
+      "latency_ms": 11.66
+    },
+    {
+      "file": "Meeting Notes 2024-03.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9191,
+      "latency_ms": 27.81
+    },
+    {
+      "file": "untitled - Copy",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8211,
+      "latency_ms": 13.03
+    },
+    {
+      "file": "index.html",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.983,
+      "latency_ms": 13.39
+    },
+    {
+      "file": "project_plan_final.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9094,
+      "latency_ms": 17.34
+    },
+    {
+      "file": "images.jpeg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.995,
+      "latency_ms": 9.7
+    },
+    {
+      "file": "notes_final.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9184,
+      "latency_ms": 16.79
+    },
+    {
+      "file": ".env.local",
+      "predicted": "misc/uncategorized",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.769,
+      "latency_ms": 10.18
+    },
+    {
+      "file": "Meeting Notes 2024-02.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9192,
+      "latency_ms": 9.71
+    },
+    {
+      "file": "photo (1).jpg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.9949,
+      "latency_ms": 20.3
+    },
+    {
+      "file": "backup (1).zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9346,
+      "latency_ms": 17.06
+    },
+    {
+      "file": "Project_Planning_DOC (2).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.891,
+      "latency_ms": 10.37
+    },
+    {
+      "file": "docker-compose - Copy.yml",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9828,
+      "latency_ms": 20.53
+    },
+    {
+      "file": "notes.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9045,
+      "latency_ms": 10.17
+    },
+    {
+      "file": "untitled document - Copy",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8157,
+      "latency_ms": 17.05
+    },
+    {
+      "file": "document (1).pdf",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9065,
+      "latency_ms": 12.58
+    },
+    {
+      "file": "file.with.many.dots.md",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8423,
+      "latency_ms": 38.56
+    },
+    {
+      "file": "ReadMe-final.md",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.6475,
+      "latency_ms": 48.64
+    },
+    {
+      "file": "notes (3).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9018,
+      "latency_ms": 32.63
+    },
+    {
+      "file": "script.sh",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9831,
+      "latency_ms": 17.11
+    },
+    {
+      "file": "report.md",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.4669,
+      "latency_ms": 9.1
+    },
+    {
+      "file": "style - Copy.css",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9836,
+      "latency_ms": 10.02
+    },
+    {
+      "file": "Dockerfile",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9796,
+      "latency_ms": 10.13
+    },
+    {
+      "file": "makefile",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9795,
+      "latency_ms": 19.01
+    },
+    {
+      "file": "config_backup_old.json",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9833,
+      "latency_ms": 28.0
+    },
+    {
+      "file": "images (1).jpeg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.995,
+      "latency_ms": 43.69
+    },
+    {
+      "file": "config.json",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9833,
+      "latency_ms": 49.16
+    },
+    {
+      "file": "config - Copy.json",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9833,
+      "latency_ms": 29.68
+    },
+    {
+      "file": "notes - draft.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9181,
+      "latency_ms": 9.79
+    },
+    {
+      "file": "images (3).jpeg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.995,
+      "latency_ms": 17.51
+    },
+    {
+      "file": "temp.tmp",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8439,
+      "latency_ms": 16.14
+    },
+    {
+      "file": ".gitkeep",
+      "predicted": "documents/research",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.878,
+      "latency_ms": 10.1
+    },
+    {
+      "file": "error.log",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8143,
+      "latency_ms": 15.01
+    },
+    {
+      "file": "screenshot.png",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.9951,
+      "latency_ms": 27.01
+    },
+    {
+      "file": "project_plan.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9093,
+      "latency_ms": 46.11
+    },
+    {
+      "file": "logfile.log",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8143,
+      "latency_ms": 38.15
+    },
+    {
+      "file": "data_final_v3.csv",
+      "predicted": "data/datasets",
+      "ground_truth": "data/datasets",
+      "correct": true,
+      "confidence": 0.9127,
+      "latency_ms": 26.71
+    },
+    {
+      "file": "report_draft_1.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9176,
+      "latency_ms": 10.46
+    },
+    {
+      "file": "project_plan - Copy.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9089,
+      "latency_ms": 9.79
+    },
+    {
+      "file": "IMG_20240301.jpg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.9949,
+      "latency_ms": 21.17
+    },
+    {
+      "file": ".dotfile",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9802,
+      "latency_ms": 8.48
+    },
+    {
+      "file": "CONFIG.XML",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9829,
+      "latency_ms": 11.43
+    },
+    {
+      "file": "img_20240302.png",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.9951,
+      "latency_ms": 14.27
+    },
+    {
+      "file": "data.csv",
+      "predicted": "data/datasets",
+      "ground_truth": "data/datasets",
+      "correct": true,
+      "confidence": 0.9131,
+      "latency_ms": 46.69
+    },
+    {
+      "file": "Copy of notes.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.8836,
+      "latency_ms": 45.08
+    },
+    {
+      "file": "README.MD",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8328,
+      "latency_ms": 29.64
+    },
+    {
+      "file": "report_draft_2.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9176,
+      "latency_ms": 10.61
+    },
+    {
+      "file": "change.log",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8124,
+      "latency_ms": 9.7
+    },
+    {
+      "file": "backup-2025-01-01.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9197,
+      "latency_ms": 11.42
+    },
+    {
+      "file": "app (1).js",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.983,
+      "latency_ms": 10.43
+    },
+    {
+      "file": "empty.csv",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.8266,
+      "latency_ms": 9.47
+    },
+    {
+      "file": ".gitignore",
+      "predicted": "documents/research",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.8417,
+      "latency_ms": 10.77
+    },
+    {
+      "file": "package-lock.json",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9832,
+      "latency_ms": 21.72
+    },
+    {
+      "file": "package.json",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9832,
+      "latency_ms": 19.49
+    },
+    {
+      "file": "project_plan_final_v2.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9065,
+      "latency_ms": 12.69
+    },
+    {
+      "file": "project-planning-doc-v3.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.917,
+      "latency_ms": 25.01
+    },
+    {
+      "file": "Screen Shot.png",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.9951,
+      "latency_ms": 12.64
+    },
+    {
+      "file": "weird.txt.file",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8219,
+      "latency_ms": 11.52
+    },
+    {
+      "file": ".env",
+      "predicted": "documents/research",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9086,
+      "latency_ms": 11.72
+    },
+    {
+      "file": "backup-2024-12-31.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9123,
+      "latency_ms": 10.8
+    },
+    {
+      "file": "archive-v2.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9418,
+      "latency_ms": 11.19
+    },
+    {
+      "file": "backup - Copy.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9446,
+      "latency_ms": 11.02
+    },
+    {
+      "file": "style.css",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9836,
+      "latency_ms": 9.76
+    },
+    {
+      "file": "archive-v1.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9417,
+      "latency_ms": 11.36
+    },
+    {
+      "file": "script (1).sh",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9831,
+      "latency_ms": 10.12
+    },
+    {
+      "file": "project_plan - Copy (1).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9037,
+      "latency_ms": 9.94
+    },
+    {
+      "file": "temp_file.tmp",
+      "predicted": "documents/research",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.8104,
+      "latency_ms": 19.7
+    },
+    {
+      "file": "readme.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.843,
+      "latency_ms": 9.95
+    },
+    {
+      "file": "archive.tar.gz",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9235,
+      "latency_ms": 20.06
+    },
+    {
+      "file": "docker-compose.yml",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9828,
+      "latency_ms": 9.87
+    },
+    {
+      "file": "photo (2).jpg",
+      "predicted": "media/images",
+      "ground_truth": "media/images",
+      "correct": true,
+      "confidence": 0.9949,
+      "latency_ms": 9.6
+    },
+    {
+      "file": "notes_draft_final (1).md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9183,
+      "latency_ms": 8.83
+    },
+    {
+      "file": "project_planning_doc (1).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.8909,
+      "latency_ms": 11.3
+    },
+    {
+      "file": "ProjectPlanningDoc.md",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.82,
+      "latency_ms": 12.71
+    },
+    {
+      "file": "access.log",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8131,
+      "latency_ms": 16.68
+    },
+    {
+      "file": "backup-2024-01-01.zip",
+      "predicted": "archives",
+      "ground_truth": "archives",
+      "correct": true,
+      "confidence": 0.9262,
+      "latency_ms": 22.08
+    },
+    {
+      "file": "desktop.ini",
+      "predicted": "code/projects",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.9824,
+      "latency_ms": 17.05
+    },
+    {
+      "file": "Meeting Notes 2024-01.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9193,
+      "latency_ms": 11.66
+    },
+    {
+      "file": "notes.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9158,
+      "latency_ms": 12.68
+    },
+    {
+      "file": "main.py.bak",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9829,
+      "latency_ms": 14.39
+    },
+    {
+      "file": "main.py",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9821,
+      "latency_ms": 13.91
+    },
+    {
+      "file": "style-final.css",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9836,
+      "latency_ms": 18.43
+    },
+    {
+      "file": "untitled",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8216,
+      "latency_ms": 15.2
+    },
+    {
+      "file": "main (1).py",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9822,
+      "latency_ms": 22.51
+    },
+    {
+      "file": "file.with.many.dots.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8445,
+      "latency_ms": 18.67
+    },
+    {
+      "file": "project_plan (1).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9093,
+      "latency_ms": 17.34
+    },
+    {
+      "file": ".empty",
+      "predicted": "archives",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.6421,
+      "latency_ms": 14.46
+    },
+    {
+      "file": "data - Copy.csv",
+      "predicted": "data/datasets",
+      "ground_truth": "data/datasets",
+      "correct": true,
+      "confidence": 0.9126,
+      "latency_ms": 14.36
+    },
+    {
+      "file": "Makefile.bak",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9829,
+      "latency_ms": 17.83
+    },
+    {
+      "file": "untitled (1)",
+      "predicted": "documents/research",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.9046,
+      "latency_ms": 15.33
+    },
+    {
+      "file": "app.js",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.983,
+      "latency_ms": 18.07
+    },
+    {
+      "file": "index copy.html",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9214,
+      "latency_ms": 16.19
+    },
+    {
+      "file": "logfile - Copy.log",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8141,
+      "latency_ms": 16.86
+    },
+    {
+      "file": "weird.file.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8446,
+      "latency_ms": 14.03
+    },
+    {
+      "file": "empty.md",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8424,
+      "latency_ms": 25.38
+    },
+    {
+      "file": "logfile (1).log",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8142,
+      "latency_ms": 25.89
+    },
+    {
+      "file": "project_plan_FINAL (1).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9032,
+      "latency_ms": 18.62
+    },
+    {
+      "file": ".hidden/.secret_dotfile",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9808,
+      "latency_ms": 51.5
+    },
+    {
+      "file": ".hidden/private.key",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9798,
+      "latency_ms": 21.52
+    },
+    {
+      "file": ".hidden/credentials.enc",
+      "predicted": "documents/research",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9123,
+      "latency_ms": 20.97
+    },
+    {
+      "file": "MISC/core.dump",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8224,
+      "latency_ms": 17.52
+    },
+    {
+      "file": "MISC/file (1).xyz",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.827,
+      "latency_ms": 15.26
+    },
+    {
+      "file": "MISC/file (2).xyz",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.827,
+      "latency_ms": 16.02
+    },
+    {
+      "file": "MISC/random.dat",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8224,
+      "latency_ms": 14.35
+    },
+    {
+      "file": "MISC/random.bin",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8224,
+      "latency_ms": 22.83
+    },
+    {
+      "file": "MISC/output.out",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8224,
+      "latency_ms": 15.17
+    },
+    {
+      "file": "images/index.html",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9939,
+      "latency_ms": 13.32
+    },
+    {
+      "file": "images/styles.css",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9836,
+      "latency_ms": 12.74
+    },
+    {
+      "file": "images/icon.svg",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9947,
+      "latency_ms": 13.46
+    },
+    {
+      "file": "images/avatar.png",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9949,
+      "latency_ms": 12.53
+    },
+    {
+      "file": "images/profile_pic.jpg",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9949,
+      "latency_ms": 13.45
+    },
+    {
+      "file": "images/logo.png",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9949,
+      "latency_ms": 13.28
+    },
+    {
+      "file": "images/banner.gif",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9946,
+      "latency_ms": 13.17
+    },
+    {
+      "file": "images/main.py",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9822,
+      "latency_ms": 11.91
+    },
+    {
+      "file": "images/avatar (1).png",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.995,
+      "latency_ms": 12.33
+    },
+    {
+      "file": "images/profile_pic_old.jpg",
+      "predicted": "media/images",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9949,
+      "latency_ms": 19.59
+    },
+    {
+      "file": "docs/config.json",
+      "predicted": "code/projects",
+      "ground_truth": "data/datasets",
+      "correct": false,
+      "confidence": 0.9833,
+      "latency_ms": 11.41
+    },
+    {
+      "file": "docs/package.json",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9832,
+      "latency_ms": 11.0
+    },
+    {
+      "file": "docs/main.py",
+      "predicted": "code/projects",
+      "ground_truth": "code/projects",
+      "correct": true,
+      "confidence": 0.9822,
+      "latency_ms": 11.62
+    },
+    {
+      "file": "a/goal.txt",
+      "predicted": "code/projects",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.9745,
+      "latency_ms": 11.08
+    },
+    {
+      "file": "project_plan/notes.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9092,
+      "latency_ms": 12.53
+    },
+    {
+      "file": "src/components/notes.txt",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9815,
+      "latency_ms": 11.26
+    },
+    {
+      "file": "src/components/data.csv",
+      "predicted": "data/datasets",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.902,
+      "latency_ms": 11.51
+    },
+    {
+      "file": "src/components/header - Copy.js",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.983,
+      "latency_ms": 13.15
+    },
+    {
+      "file": "src/components/footer.css",
+      "predicted": "code/projects",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9836,
+      "latency_ms": 11.5
+    },
+    {
+      "file": "data/exports/backup.json",
+      "predicted": "data/datasets",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9087,
+      "latency_ms": 11.51
+    },
+    {
+      "file": "data/exports/raw_data.tsv",
+      "predicted": "data/datasets",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9122,
+      "latency_ms": 11.9
+    },
+    {
+      "file": "data/exports/metrics (1).xlsx",
+      "predicted": "data/datasets",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9081,
+      "latency_ms": 26.2
+    },
+    {
+      "file": "data/exports/metrics.xlsx",
+      "predicted": "data/datasets",
+      "ground_truth": null,
+      "correct": null,
+      "confidence": 0.9093,
+      "latency_ms": 26.55
+    },
+    {
+      "file": "notes/replicas/notes.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.8879,
+      "latency_ms": 11.27
+    },
+    {
+      "file": "notes/replicas/notes (1).txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.5899,
+      "latency_ms": 12.36
+    },
+    {
+      "file": "notes/replicas/notes - Copy.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.7191,
+      "latency_ms": 16.15
+    },
+    {
+      "file": "notes/replicas/notes copy 2.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.783,
+      "latency_ms": 14.42
+    },
+    {
+      "file": "notes/replicas/notes copy 3.txt",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.7764,
+      "latency_ms": 12.2
+    },
+    {
+      "file": "a/b/config.txt",
+      "predicted": "code/projects",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.9777,
+      "latency_ms": 14.8
+    },
+    {
+      "file": "a/b/c/readme.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8439,
+      "latency_ms": 16.16
+    },
+    {
+      "file": "a/b/c/d/info.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8442,
+      "latency_ms": 12.34
+    },
+    {
+      "file": "a/b/c/d/e/data.txt",
+      "predicted": "data/datasets",
+      "ground_truth": "misc/uncategorized",
+      "correct": false,
+      "confidence": 0.9068,
+      "latency_ms": 11.22
+    },
+    {
+      "file": "a/b/c/d/e/f/stuff.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8441,
+      "latency_ms": 12.22
+    },
+    {
+      "file": "a/b/c/d/e/f/g/keep.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.844,
+      "latency_ms": 12.94
+    },
+    {
+      "file": "a/b/c/d/e/f/g/h/note.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8439,
+      "latency_ms": 13.4
+    },
+    {
+      "file": "a/b/c/d/e/f/g/h/i/deep2.md",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "documents/research",
+      "correct": false,
+      "confidence": 0.8431,
+      "latency_ms": 25.72
+    },
+    {
+      "file": "a/b/c/d/e/f/g/h/i/j/deep.txt",
+      "predicted": "misc/uncategorized",
+      "ground_truth": "misc/uncategorized",
+      "correct": true,
+      "confidence": 0.8439,
+      "latency_ms": 13.33
+    },
+    {
+      "file": "docs/reports/2024/Q3_report.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9199,
+      "latency_ms": 12.9
+    },
+    {
+      "file": "docs/reports/2024/Q2_report.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9199,
+      "latency_ms": 16.26
+    },
+    {
+      "file": "docs/reports/2024/Q4_report.md",
+      "predicted": "documents/research",
+      "ground_truth": "documents/research",
+      "correct": true,
+      "confidence": 0.9198,
+      "latency_ms": 15.97
+    }
+  ]
+}

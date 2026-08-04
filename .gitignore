@@ -1,17 +1,11 @@
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 .DS_Store
-artifacts/student_model_ckpt/*.pt
-artifacts/ui_runs/
-artifacts/_*/
-artifacts/user_prefs.json
-Supa Messy Folder/
-DEMO_Desktop_Mess/
-Messy-Folder/
-.env
-.env.*
-*.pem
-*.key
-.idea/
-.vscode/
+.pytest_cache/
+dist/
+build/
+
+*.pt
+!models/model.pt

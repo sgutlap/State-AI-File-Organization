@@ -1,0 +1,10 @@
+{
+  "abstain_threshold": 0.0,
+  "calibration_checkpoint": "models/model.pt",
+  "calibration_manifest": "/Users/sriram/Other/github/BWSI CogWorks/State-AI/artifacts/final_owner_study/calibration_manifest.jsonl",
+  "calibration_scorer": "virtual_dual",
+  "calibration_split": "validation",
+  "margin_threshold": 0.13180437684059143,
+  "validation_action_accuracy": 0.7773972602739726,
+  "validation_coverage": 0.8424657534246576
+}

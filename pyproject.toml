@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "state-ai"
+version = "0.2.0"
+description = "Open-taxonomy file organization agent"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.2.0",
+    "scipy>=1.10.0",
+    "tqdm>=4.65.0",
+    "pypdf>=6.0.0",
+]
+
+[project.scripts]
+state-ai = "core.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*"]

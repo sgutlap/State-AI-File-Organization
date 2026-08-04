@@ -1,16 +1,30 @@
-you need `artifacts/student_model_ckpt/student_model.pt` (I cant push it)
+# State AI
 
-Im gonna send it via drive. tokenizer json is already in the repo
+## Setup
 
-ALso:
+```bash
+pip install -e .
+```
 
-`frontend.py` is empty for now.
+## Go
 
-Libraries:
-torch
-transformers
-pyyaml
-streamlit  
+```bash
+# 1. pick your folders
+state-ai taxonomy seed --out my_taxonomy.json
 
-# Windows 
-Run - `python Install_context_menu.py`
+# 2. dry-run 
+state-ai organize-open ~/Desktop/MessyCopy \
+  --taxonomy my_taxonomy.json \
+  --checkpoint models/model.pt
+```
+
+Copy the folder first. Add `--apply --calibration models/calibration.json` only when the plan looks right.
+
+## Extra
+
+```bash
+state-ai scan ~/Desktop/MessyCopy
+state-ai taxonomy discover ~/Desktop/MessyCopy --taxonomy my_taxonomy.json
+```
+
+Training scripts: `scripts/`. Older baseline: `Baselines/old/v1/`.
