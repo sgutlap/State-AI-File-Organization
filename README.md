@@ -28,3 +28,11 @@ state-ai taxonomy discover ~/Desktop/MessyCopy --taxonomy my_taxonomy.json
 ```
 
 Training scripts: `scripts/`. Older baseline: `Baselines/old/v1/`.
+
+## URTC multi-backend eval results
+
+Synced evaluation package lives at:
+
+- [`artifacts/urtc_eval_package/README_RESULTS.md`](artifacts/urtc_eval_package/README_RESULTS.md)
+- [`artifacts/urtc_eval_package/ready_runs/TEAMMATE_RESULTS_PACK.md`](artifacts/urtc_eval_package/ready_runs/TEAMMATE_RESULTS_PACK.md)
+- Tables: `artifacts/urtc_eval_package/ready_runs/rollup/PAPER_TABLES.md`

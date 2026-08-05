@@ -9,3 +9,4 @@ build/
 
 *.pt
 !models/model.pt
+artifacts/

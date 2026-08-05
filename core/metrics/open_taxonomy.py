@@ -87,10 +87,14 @@ def evaluate_open_taxonomy(
         if prediction is None:
             missing += 1
             prediction = TaxonomyPrediction(task_id=task.task_id, abstained=True)
-        ranked = tuple(folder for folder in prediction.ranked_folder_ids if folder in task.candidate_folder_ids)
-        pred_label = ABSTAIN if prediction.abstained or not ranked else ranked[0]
+        ranked = tuple(prediction.ranked_folder_ids)
+        pred_label = (
+            ABSTAIN if prediction.abstained
+            else ranked[0] if ranked and ranked[0] in task.candidate_folder_ids
+            else "__INVALID__"
+        )
         true_is_abstain = task.abstain
-        if pred_label != ABSTAIN:
+        if pred_label not in {ABSTAIN, "__INVALID__"}:
             non_abstained += 1
 
         if true_is_abstain:
